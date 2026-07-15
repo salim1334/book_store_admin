@@ -1,4 +1,3 @@
-// components/layout/sidebar.tsx
 'use client';
 
 import Link from 'next/link';
@@ -14,6 +13,7 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  Book,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -35,6 +35,11 @@ export function Sidebar({
   const authorNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/books', label: 'My Books', icon: BookOpen },
+    {
+      href: '/dashboard/guide#preparing-images',
+      label: 'Content Guide',
+      icon: Book,
+    },
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -42,6 +47,11 @@ export function Sidebar({
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/authors', label: 'Authors', icon: Users },
     { href: '/dashboard/all-books', label: 'All Books', icon: FileText },
+    {
+      href: '/dashboard/guide#preparing-images',
+      label: 'Content Guide',
+      icon: Book,
+    },
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -55,7 +65,6 @@ export function Sidebar({
         collapsed ? 'w-14' : 'w-64'
       )}
     >
-      {/* Logo area */}
       <div className="flex h-16 items-center gap-3 border-b border-gray-200 px-3">
         <div className="bg-emerald-600 p-2 shadow-sm shrink-0">
           <BookOpen className="h-6 w-6 text-white" />
@@ -68,7 +77,6 @@ export function Sidebar({
         )}
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 space-y-2 px-2 py-5">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -96,7 +104,6 @@ export function Sidebar({
         })}
       </nav>
 
-      {/* Super Admin Badge */}
       {userRole === 'SUPER_ADMIN' && !collapsed && (
         <div className="border-t border-gray-200 px-4 py-4">
           <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-3">
@@ -108,7 +115,6 @@ export function Sidebar({
         </div>
       )}
 
-      {/* Collapse toggle button */}
       <div className="border-t border-gray-200 p-2">
         <Button
           variant="ghost"
@@ -127,7 +133,6 @@ export function Sidebar({
         </Button>
       </div>
 
-      {/* Logout */}
       <div className="border-t border-gray-200 p-2">
         <Button
           variant="ghost"
@@ -145,3 +150,4 @@ export function Sidebar({
     </aside>
   );
 }
+

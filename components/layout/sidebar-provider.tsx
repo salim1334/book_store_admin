@@ -40,6 +40,7 @@ export function SidebarProvider({
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed');
     if (saved !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCollapsed(JSON.parse(saved));
     }
   }, []);

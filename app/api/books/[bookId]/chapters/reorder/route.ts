@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { auth } from '@/auth';
 
 export async function PATCH(
-  req: Request,
-  { params }: { params: { bookId: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ bookId: string }> }
 ) {
   try {
     const session = await auth();
@@ -14,7 +14,7 @@ export async function PATCH(
     }
 
     const userId = session.user.id;
-    const { bookId } = params;
+    const { bookId } = await params;
     const { chapterIds } = await req.json();
 
     if (!chapterIds || !Array.isArray(chapterIds)) {
@@ -47,7 +47,6 @@ export async function PATCH(
     });
 
     return new NextResponse('Success', { status: 200 });
-
   } catch (error) {
     console.error('[REORDER_CHAPTERS]', error);
     return new NextResponse('Internal Server Error', { status: 500 });

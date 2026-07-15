@@ -7,9 +7,10 @@ export async function PATCH(
   { params }: { params: Promise<{ authorId: string }> }
 ) {
   const { authorId } = await params;
+
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -27,7 +28,10 @@ export async function PATCH(
     }
 
     if (author.role !== 'AUTHOR') {
-      return NextResponse.json({ error: 'User is not an author' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'User is not an author' },
+        { status: 400 }
+      );
     }
 
     const body = await request.json();
@@ -53,18 +57,22 @@ export async function PATCH(
     return NextResponse.json(updatedAuthor);
   } catch (error) {
     console.error('Error updating author:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { authorId: string } }
+  { params }: { params: Promise<{ authorId: string }> }
 ) {
   const { authorId } = await params;
+
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -82,7 +90,10 @@ export async function DELETE(
     }
 
     if (author.role !== 'AUTHOR') {
-      return NextResponse.json({ error: 'User is not an author' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'User is not an author' },
+        { status: 400 }
+      );
     }
 
     // Delete the author (cascade will handle related data)
@@ -93,6 +104,9 @@ export async function DELETE(
     return NextResponse.json({ message: 'Author deleted successfully' });
   } catch (error) {
     console.error('Error deleting author:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

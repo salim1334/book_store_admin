@@ -2,13 +2,20 @@ import { writeFile, mkdir, unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 
-// Allowed file types
-export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-export const ALLOWED_AUDIO_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-m4a'];
+import {
+  MAX_AUDIO_SIZE_BYTES,
+  MAX_IMAGE_SIZE_BYTES,
+  uploadLimits,
+  isSupportedAudioType,
+  isSupportedImageType,
+} from './config/upload-limits';
 
-// Max file sizes (in bytes)
-export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
-export const MAX_AUDIO_SIZE = 50 * 1024 * 1024; // 50MB
+// Backward-compatible exports (used by existing code/tests).
+// Prefer importing from `lib/config/upload-limits.ts` directly in new code.
+export const ALLOWED_IMAGE_TYPES = uploadLimits.supportedImageTypes;
+export const ALLOWED_AUDIO_TYPES = uploadLimits.supportedAudioTypes;
+export const MAX_IMAGE_SIZE = MAX_IMAGE_SIZE_BYTES;
+export const MAX_AUDIO_SIZE = MAX_AUDIO_SIZE_BYTES;
 
 export interface UploadResult {
   success: boolean;
@@ -38,7 +45,9 @@ export function generateUniqueFilename(originalName: string): string {
   const random = Math.random().toString(36).substring(2, 15);
   const ext = path.extname(originalName);
   const nameWithoutExt = path.basename(originalName, ext);
-  const sanitizedName = nameWithoutExt.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
+  const sanitizedName = nameWithoutExt
+    .replace(/[^a-zA-Z0-9]/g, '_')
+    .substring(0, 50);
   return `${sanitizedName}_${timestamp}_${random}${ext}`;
 }
 
@@ -52,23 +61,34 @@ export async function uploadImage(
 ): Promise<UploadResult> {
   try {
     // Validate file type
-    if (!validateFileType(file, ALLOWED_IMAGE_TYPES)) {
+    if (!isSupportedImageType(file.type)) {
       return {
         success: false,
-        error: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.',
+        error: `Invalid file type. Supported: ${uploadLimits.supportedImageTypes.join(
+          ', '
+        )}`,
       };
     }
 
     // Validate file size
-    if (!validateFileSize(file, MAX_IMAGE_SIZE)) {
+    if (!validateFileSize(file, MAX_IMAGE_SIZE_BYTES)) {
       return {
         success: false,
-        error: `File size exceeds ${MAX_IMAGE_SIZE / 1024 / 1024}MB limit.`,
+        error: `File size exceeds ${
+          MAX_IMAGE_SIZE_BYTES / 1024 / 1024
+        }MB limit.`,
       };
     }
 
     // Create upload directory
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'images', bookId, identifier);
+    const uploadDir = path.join(
+      process.cwd(),
+      'public',
+      'uploads',
+      'images',
+      bookId,
+      identifier
+    );
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true });
     }
@@ -109,23 +129,34 @@ export async function uploadAudio(
 ): Promise<UploadResult> {
   try {
     // Validate file type
-    if (!validateFileType(file, ALLOWED_AUDIO_TYPES)) {
+    if (!isSupportedAudioType(file.type)) {
       return {
         success: false,
-        error: 'Invalid file type. Only MP3, M4A, and WAV audio files are allowed.',
+        error: `Invalid file type. Supported: ${uploadLimits.supportedAudioTypes.join(
+          ', '
+        )}`,
       };
     }
 
     // Validate file size
-    if (!validateFileSize(file, MAX_AUDIO_SIZE)) {
+    if (!validateFileSize(file, MAX_AUDIO_SIZE_BYTES)) {
       return {
         success: false,
-        error: `File size exceeds ${MAX_AUDIO_SIZE / 1024 / 1024}MB limit.`,
+        error: `File size exceeds ${
+          MAX_AUDIO_SIZE_BYTES / 1024 / 1024
+        }MB limit.`,
       };
     }
 
     // Create upload directory
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'audio', bookId, chapterId);
+    const uploadDir = path.join(
+      process.cwd(),
+      'public',
+      'uploads',
+      'audio',
+      bookId,
+      chapterId
+    );
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true });
     }
