@@ -164,33 +164,45 @@ export function PageManager({
     }
   };
 
-  const handleDeletePage = async (pageId: string) => {
-    if (!confirm('Are you sure you want to delete this page?')) return;
+  const handleDeletePage = (pageId: string) => {
+    toast('Are you sure you want to delete this page?', {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          setLoading(pageId);
+          try {
+            const response = await fetch(
+              `/api/chapters/${chapterId}/pages/${pageId}`,
+              {
+                method: 'DELETE',
+              }
+            );
 
-    setLoading(pageId);
-    try {
-      const response = await fetch(
-        `/api/chapters/${chapterId}/pages/${pageId}`,
-        {
-          method: 'DELETE',
-        }
-      );
-
-      if (response.ok) {
-        // Remove from local state
-        const updatedPages = pages.filter((p) => p.id !== pageId);
-        setPages(updatedPages);
-        notifyParent(updatedPages);
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to delete page');
-      }
-    } catch (error) {
-      console.error('Error deleting page:', error);
-      toast.error('An error occurred');
-    } finally {
-      setLoading(null);
-    }
+            if (response.ok) {
+              const updatedPages = pages.filter((p) => p.id !== pageId);
+              setPages(updatedPages);
+              notifyParent(updatedPages);
+              toast.success('Page deleted successfully.');
+            } else {
+              const error = await response.json();
+              toast.error(error.error || 'Failed to delete page');
+            }
+          } catch (error) {
+            console.error('Error deleting page:', error);
+            toast.error('An error occurred');
+          } finally {
+            setLoading(null);
+          }
+        },
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => {},
+      },
+      classNames: {
+        actionButton: 'bg-red-600 text-white',
+      },
+    });
   };
 
   const handleMovePage = async (index: number, direction: 'up' | 'down') => {

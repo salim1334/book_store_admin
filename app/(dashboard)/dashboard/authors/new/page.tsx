@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Mail } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function NewAuthorPage() {
   const router = useRouter();
@@ -24,12 +25,12 @@ export default function NewAuthorPage() {
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
 
     if (formData.password.length < 6) {
-      alert('Password must be at least 6 characters');
+      toast.error('Password must be at least 6 characters');
       return;
     }
 
@@ -49,14 +50,15 @@ export default function NewAuthorPage() {
       });
 
       if (response.ok) {
+        toast.success('Author account created successfully!');
         router.push('/dashboard/authors');
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to create author');
+        toast.error(error.error || 'Failed to create author');
       }
     } catch (error) {
       console.error('Error creating author:', error);
-      alert('An error occurred');
+      toast.error('An error occurred');
     } finally {
       setLoading(false);
     }

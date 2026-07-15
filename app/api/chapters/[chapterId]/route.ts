@@ -6,6 +6,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { chapterId: string } }
 ) {
+  const chapterId = params.chapterId;
   try {
     const session = await auth();
     
@@ -14,7 +15,7 @@ export async function GET(
     }
 
     const chapter = await prisma.chapter.findUnique({
-      where: { id: params.chapterId },
+      where: { id: chapterId },
       include: {
         book: true,
         pages: {
@@ -45,6 +46,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { chapterId: string } }
 ) {
+  const chapterId = params.chapterId;
   try {
     const session = await auth();
     if (!session?.user) {
@@ -52,7 +54,7 @@ export async function PUT(
     }
 
     const chapter = await prisma.chapter.findUnique({
-      where: { id: params.chapterId },
+      where: { id: chapterId },
       include: { book: true },
     });
 
@@ -71,7 +73,7 @@ export async function PUT(
     const updatedChapter = await prisma.$transaction(async (tx) => {
       // 1. Update Chapter Title
       const newChapter = await tx.chapter.update({
-        where: { id: params.chapterId },
+        where: { id: chapterId },
         data: {
           title: title.trim(),
           version: { increment: 1 },
@@ -82,7 +84,7 @@ export async function PUT(
       // 2. Update Pages (Text or Image)
       const pageModel = newChapter.book.type === 'TEXT' ? tx.chapterText : tx.chapterPage;
       const existingPages = await (pageModel as any).findMany({
-        where: { chapterId: params.chapterId },
+        where: { chapterId: chapterId },
       });
 
       const incomingPageIds = new Set(pages.map((p: any) => p.id));
@@ -99,7 +101,7 @@ export async function PUT(
           create: {
             ...page,
             orderIndex: i,
-            chapterId: params.chapterId,
+            chapterId: chapterId,
             authorId: session.user.id,
           },
           update: {
@@ -114,7 +116,7 @@ export async function PUT(
 
       // 3. Update Audio
       const existingAudio = await tx.chapterAudio.findFirst({
-        where: { chapterId: params.chapterId },
+        where: { chapterId: chapterId },
       });
 
       if (audioPath) {
@@ -126,7 +128,7 @@ export async function PUT(
         } else {
           await tx.chapterAudio.create({
             data: {
-              chapterId: params.chapterId,
+              chapterId: chapterId,
               authorId: session.user.id,
               audioPath,
             },
@@ -152,7 +154,7 @@ export async function PUT(
 
     // Refetch the full chapter data to return to the client
     const finalChapter = await prisma.chapter.findUnique({
-      where: { id: params.chapterId },
+      where: { id: chapterId },
       include: {
         book: true,
         pages: { orderBy: { orderIndex: 'asc' } },
@@ -172,6 +174,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { chapterId: string } }
 ) {
+  const chapterId = params.chapterId;
   try {
     const session = await auth();
     
@@ -180,7 +183,7 @@ export async function PATCH(
     }
 
     const chapter = await prisma.chapter.findUnique({
-      where: { id: params.chapterId },
+      where: { id: chapterId },
       include: { book: true },
     });
 
@@ -197,7 +200,7 @@ export async function PATCH(
     const { title, orderIndex } = body;
 
     const updatedChapter = await prisma.chapter.update({
-      where: { id: params.chapterId },
+      where: { id: chapterId },
       data: {
         ...(title && { title }),
         ...(orderIndex !== undefined && { orderIndex }),
@@ -227,6 +230,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { chapterId: string } }
 ) {
+  const chapterId = params.chapterId;
   try {
     const session = await auth();
     
@@ -235,7 +239,7 @@ export async function DELETE(
     }
 
     const chapter = await prisma.chapter.findUnique({
-      where: { id: params.chapterId },
+      where: { id: chapterId },
       include: { book: true },
     });
 
@@ -250,7 +254,7 @@ export async function DELETE(
 
     // Soft delete
     await prisma.chapter.update({
-      where: { id: params.chapterId },
+      where: { id: chapterId },
       data: {
         deletedAt: new Date(),
       },

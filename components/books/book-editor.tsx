@@ -23,6 +23,7 @@ import {
   Image as ImageIcon,
   Music
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { getBookStatusBadge } from '@/lib/utils';
 
 interface BookEditorProps {
@@ -58,9 +59,13 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
         const updatedBook = await response.json();
         setBook(updatedBook);
         setLastSaved(new Date());
+        toast.success('Book details saved!');
+      } else {
+        toast.error('Failed to save book details.');
       }
     } catch (error) {
       console.error('Error saving book:', error);
+      toast.error('An error occurred while saving.');
     } finally {
       setSaving(false);
     }
@@ -86,11 +91,11 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
         router.refresh(); // To update server components if needed
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to upload cover image.');
+        toast.error(error.error || 'Failed to upload cover image.');
       }
     } catch (error) {
       console.error('Error uploading cover image:', error);
-      alert('An error occurred during upload.');
+      toast.error('An error occurred during upload.');
     } finally {
       setCoverImageLoading(false);
       // Reset file input
@@ -101,30 +106,40 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
   };
 
   const handlePublish = async () => {
-    if (!confirm('Are you sure you want to publish this book? It will be available to readers.')) {
-      return;
-    }
+    toast('Are you sure you want to publish this book?', {
+      description: 'It will become available to all readers.',
+      action: {
+        label: 'Publish',
+        onClick: async () => {
+          setSaving(true);
+          try {
+            const response = await fetch(`/api/books/${book.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'PUBLISHED' }),
+            });
 
-    setSaving(true);
-    try {
-      const response = await fetch(`/api/books/${book.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
+            if (response.ok) {
+              const updatedBook = await response.json();
+              setBook(updatedBook);
+              toast.success('Book published successfully!');
+              router.refresh();
+            } else {
+              toast.error('Failed to publish book.');
+            }
+          } catch (error) {
+            console.error('Error publishing book:', error);
+            toast.error('An error occurred during publishing.');
+          } finally {
+            setSaving(false);
+          }
         },
-        body: JSON.stringify({ status: 'PUBLISHED' }),
-      });
-
-      if (response.ok) {
-        const updatedBook = await response.json();
-        setBook(updatedBook);
-        router.refresh();
-      }
-    } catch (error) {
-      console.error('Error publishing book:', error);
-    } finally {
-      setSaving(false);
-    }
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => {},
+      },
+    });
   };
 
   return (

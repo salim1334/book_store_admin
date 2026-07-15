@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function NewBookPage() {
   const router = useRouter();
@@ -34,13 +35,15 @@ export default function NewBookPage() {
 
       if (response.ok) {
         const book = await response.json();
+        toast.success('Book created successfully!');
         router.push(`/dashboard/books/${book.id}`);
       } else {
-        alert('Failed to create book');
+        const error = await response.json();
+        toast.error(error.error || 'Failed to create book');
       }
     } catch (error) {
       console.error('Error creating book:', error);
-      alert('An error occurred');
+      toast.error('An error occurred');
     } finally {
       setLoading(false);
     }

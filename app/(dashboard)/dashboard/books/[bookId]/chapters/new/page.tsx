@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function NewChapterPage() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function NewChapterPage() {
     e.preventDefault();
     
     if (!title.trim()) {
-      alert('Please enter a chapter title');
+      toast.error('Please enter a chapter title');
       return;
     }
 
@@ -41,14 +42,15 @@ export default function NewChapterPage() {
 
       if (response.ok) {
         const chapter = await response.json();
+        toast.success('Chapter created successfully!');
         router.push(`/dashboard/books/${bookId}/chapters/${chapter.id}`);
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to create chapter');
+        toast.error(error.error || 'Failed to create chapter');
       }
     } catch (error) {
       console.error('Error creating chapter:', error);
-      alert('An error occurred');
+      toast.error('An error occurred');
     } finally {
       setLoading(false);
     }

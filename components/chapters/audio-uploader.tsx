@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { toast } from 'sonner';
 import { Music, Upload, Trash2, Loader2, Play, Pause } from 'lucide-react';
 
 interface AudioUploaderProps {
@@ -55,41 +56,52 @@ export function AudioUploader({
         onUpdate({ audioPath: newPath });
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to upload audio');
+        toast.error(error.error || 'Failed to upload audio');
       }
     } catch (error) {
       console.error('Error uploading audio:', error);
-      alert('An error occurred');
+      toast.error('An error occurred');
     } finally {
       setLoading(false);
       e.target.value = '';
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this audio?')) {
-      return;
-    }
+  const handleDelete = () => {
+    toast('Are you sure you want to delete this audio?', {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          setLoading(true);
+          try {
+            const response = await fetch(`/api/chapters/${chapterId}/audio`, {
+              method: 'DELETE',
+            });
 
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/chapters/${chapterId}/audio`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setCurrentAudioPath(null);
-        onUpdate({ audioPath: null });
-      } else {
-        const error = await response.json();
-        alert(error.error || 'Failed to delete audio');
-      }
-    } catch (error) {
-      console.error('Error deleting audio:', error);
-      alert('An error occurred');
-    } finally {
-      setLoading(false);
-    }
+            if (response.ok) {
+              setCurrentAudioPath(null);
+              onUpdate({ audioPath: null });
+              toast.success('Audio deleted successfully.');
+            } else {
+              const error = await response.json();
+              toast.error(error.error || 'Failed to delete audio');
+            }
+          } catch (error) {
+            console.error('Error deleting audio:', error);
+            toast.error('An error occurred');
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => {},
+      },
+      classNames: {
+        actionButton: 'bg-red-600 text-white',
+      },
+    });
   };
 
   const togglePlay = () => {
