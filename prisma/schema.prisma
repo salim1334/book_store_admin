@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  AUTHOR
+}
+
+enum BookType {
+  IMAGE
+  TEXT
+}
+
+enum BookStatus {
+  DRAFT
+  PUBLISHED
+  UNPUBLISHED_CHANGES
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String?
+  role          UserRole  @default(AUTHOR)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  books         Book[]
+  
+  @@map("users")
+}
+
+model Book {
+  id              String      @id @default(cuid())
+  authorId        String
+  title           String
+  description     String?     @db.Text
+  coverImage      String?
+  type            BookType
+  status          BookStatus  @default(DRAFT)
+  isHidden        Boolean     @default(false)
+  isBundled       Boolean     @default(false)
+  version         Int         @default(1)
+  publishedAt     DateTime?
+  deletedAt       DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relations
+  author          User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  chapters        Chapter[]
+  
+  @@index([authorId])
+  @@map("books")
+}
+
+model Chapter {
+  id              String        @id @default(cuid())
+  bookId          String
+  authorId        String
+  title           String
+  orderIndex      Int
+  version         Int           @default(1)
+  deletedAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  // Relations
+  book            Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  pages           ChapterPage[]
+  texts           ChapterText[]
+  audios          ChapterAudio[]
+  
+  @@index([bookId])
+  @@index([authorId])
+  @@map("chapters")
+}
+
+model ChapterPage {
+  id              String    @id @default(cuid())
+  chapterId       String
+  authorId        String
+  imagePath       String
+  orderIndex      Int
+  audioStartTime  Float?
+  audioEndTime    Float?
+  version         Int       @default(1)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  chapter         Chapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  
+  @@index([chapterId])
+  @@index([authorId])
+  @@map("chapter_pages")
+}
+
+model ChapterText {
+  id              String    @id @default(cuid())
+  chapterId       String
+  authorId        String
+  content         String    @db.LongText
+  orderIndex      Int       @default(1)
+  audioStartTime  Float?
+  audioEndTime    Float?
+  version         Int       @default(1)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  chapter         Chapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  
+  @@index([chapterId])
+  @@index([authorId])
+  @@map("chapter_texts")
+}
+
+model ChapterAudio {
+  id              String    @id @default(cuid())
+  chapterId       String
+  authorId        String
+  audioPath       String
+  duration        Int?      // Duration in seconds
+  version         Int       @default(1)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  chapter         Chapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  
+  @@index([chapterId])
+  @@index([authorId])
+  @@map("chapter_audios")
+}
