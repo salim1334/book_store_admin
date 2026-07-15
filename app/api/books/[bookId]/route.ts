@@ -4,8 +4,9 @@ import { prisma } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { bookId: string } }
+  { params }: { params: Promise<{ bookId: string }> }
 ) {
+  const { bookId } = await params;
   try {
     const session = await auth();
     
@@ -14,7 +15,7 @@ export async function GET(
     }
 
     const book = await prisma.book.findUnique({
-      where: { id: params.bookId },
+      where: { id: bookId },
       include: {
         author: {
           select: {
@@ -57,8 +58,9 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { bookId: string } }
+  { params }: { params: Promise<{ bookId: string }> }
 ) {
+  const { bookId } = await params;
   try {
     const session = await auth();
     
@@ -67,7 +69,7 @@ export async function PATCH(
     }
 
     const book = await prisma.book.findUnique({
-      where: { id: params.bookId },
+      where: { id: bookId },
     });
 
     if (!book) {
@@ -88,7 +90,7 @@ export async function PATCH(
       : status || book.status;
 
     const updatedBook = await prisma.book.update({
-      where: { id: params.bookId },
+      where: { id: bookId },
       data: {
         ...(title && { title }),
         ...(description !== undefined && { description }),
@@ -131,8 +133,9 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { bookId: string } }
+  { params }: { params: Promise<{ bookId: string }> }
 ) {
+  const { bookId } = await params;
   try {
     const session = await auth();
     
@@ -141,7 +144,7 @@ export async function DELETE(
     }
 
     const book = await prisma.book.findUnique({
-      where: { id: params.bookId },
+      where: { id: bookId },
     });
 
     if (!book) {
@@ -155,7 +158,7 @@ export async function DELETE(
 
     // Soft delete
     await prisma.book.update({
-      where: { id: params.bookId },
+      where: { id: bookId },
       data: {
         deletedAt: new Date(),
       },

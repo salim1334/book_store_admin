@@ -1,6 +1,23 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -30,6 +47,52 @@ interface BookEditorProps {
   book: any;
 }
 
+function SortableChapterItem({ id, chapter, index, bookId, bookType }: { id: string, chapter: any, index: number, bookId: string, bookType: string }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 1 : 'auto',
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 p-4 border rounded-lg bg-white hover:bg-gray-50 transition-colors"
+    >
+      <div {...attributes} {...listeners} className="cursor-move">
+        <GripVertical className="h-5 w-5 text-gray-400" />
+      </div>
+      <div className="flex-1">
+        <div className="font-medium">{chapter.title}</div>
+        <div className="text-sm text-gray-500">
+          Chapter {index + 1}
+          {bookType === 'IMAGE' && chapter.pages && ` • ${chapter.pages.length} pages`}
+          {bookType === 'TEXT' && chapter.texts && chapter.texts.length > 0 && ' • Has content'}
+          {chapter.audios && chapter.audios.length > 0 && ' • Has audio'}
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        {chapter.audios && chapter.audios.length > 0 && (
+          <Music className="h-4 w-4 text-blue-600" />
+        )}
+        <Link href={`/dashboard/books/${bookId}/chapters/${chapter.id}`}>
+          <Button variant="outline" size="sm">
+            <Edit className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+        </Link>
+        <Button variant="outline" size="sm" className="text-red-600">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function BookEditor({ book: initialBook }: BookEditorProps) {
   const router = useRouter();
   const [book, setBook] = useState(initialBook);
@@ -37,12 +100,57 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [coverImageLoading, setCoverImageLoading] = useState(false);
   const coverImageInputRef = useRef<HTMLInputElement>(null);
+  const [chapters, setChapters] = useState(initialBook.chapters || []);
   const [formData, setFormData] = useState({
     title: book.title,
     description: book.description || '',
   });
 
   const statusBadge = getBookStatusBadge(book.status);
+
+  useEffect(() => {
+    setChapters(initialBook.chapters || []);
+  }, [initialBook.chapters]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = chapters.findIndex((c: any) => c.id === active.id);
+      const newIndex = chapters.findIndex((c: any) => c.id === over.id);
+      const reorderedChapters = arrayMove(chapters, oldIndex, newIndex);
+      setChapters(reorderedChapters);
+
+      const chapterIds = reorderedChapters.map((c: any) => c.id);
+
+      try {
+        const response = await fetch(`/api/books/${book.id}/chapters/reorder`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chapterIds }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to reorder chapters');
+        }
+
+        toast.success('Chapter order saved!');
+        router.refresh();
+      } catch (error) {
+        console.error('Error reordering chapters:', error);
+        toast.error('Failed to save new chapter order.');
+        // Revert to original order on failure
+        setChapters(chapters);
+      }
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -89,6 +197,7 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
         const result = await response.json();
         setBook((prevBook: any) => ({ ...prevBook, coverImage: result.coverImage }));
         router.refresh(); // To update server components if needed
+        toast.success('Cover image uploaded and set successfully!');
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to upload cover image.');
@@ -309,39 +418,22 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
               </Link>
             </div>
           ) : (
-            <div className="space-y-2">
-              {book.chapters?.map((chapter: any, index: number) => (
-                <div
-                  key={chapter.id}
-                  className="flex items-center gap-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <GripVertical className="h-5 w-5 text-gray-400 cursor-move" />
-                  <div className="flex-1">
-                    <div className="font-medium">{chapter.title}</div>
-                    <div className="text-sm text-gray-500">
-                      Chapter {index + 1}
-                      {book.type === 'IMAGE' && chapter.pages && ` • ${chapter.pages.length} pages`}
-                      {book.type === 'TEXT' && chapter.texts && chapter.texts.length > 0 && ' • Has content'}
-                      {chapter.audios && chapter.audios.length > 0 && ' • Has audio'}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {chapter.audios && chapter.audios.length > 0 && (
-                      <Music className="h-4 w-4 text-blue-600" />
-                    )}
-                    <Link href={`/dashboard/books/${book.id}/chapters/${chapter.id}`}>
-                      <Button variant="outline" size="sm">
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </Button>
-                    </Link>
-                    <Button variant="outline" size="sm" className="text-red-600">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={chapters.map((c: any) => c.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {chapters.map((chapter: any, index: number) => (
+                    <SortableChapterItem 
+                      key={chapter.id} 
+                      id={chapter.id} 
+                      chapter={chapter} 
+                      index={index} 
+                      bookId={book.id}
+                      bookType={book.type}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
         </CardContent>
       </Card>

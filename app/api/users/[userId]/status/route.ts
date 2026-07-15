@@ -4,8 +4,9 @@ import { prisma } from '@/lib/db';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await params;
   try {
     const session = await auth();
     if (session?.user.role !== 'SUPER_ADMIN') {
@@ -13,7 +14,7 @@ export async function PATCH(
     }
 
     const userToUpdate = await prisma.user.findUnique({
-      where: { id: params.userId },
+      where: { id: userId },
     });
 
     if (!userToUpdate) {
@@ -33,7 +34,7 @@ export async function PATCH(
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: params.userId },
+      where: { id: userId },
       data: { isActive },
     });
 

@@ -41,7 +41,7 @@ async function getBook(bookId: string, userId: string, userRole: string) {
 }
 
 export default async function BookEditPage({
-  params,
+  params: { bookId },
 }: {
   params: { bookId: string };
 }) {
@@ -51,7 +51,7 @@ export default async function BookEditPage({
     redirect('/login');
   }
 
-  const book = await getBook(params.bookId, session.user.id, session.user.role);
+  const book = await getBook(bookId, session.user.id, session.user.role);
 
   if (!book) {
     redirect('/dashboard/books');

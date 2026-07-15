@@ -5,8 +5,9 @@ import { hashPassword } from '@/lib/auth';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { authorId: string } }
+  { params }: { params: Promise<{ authorId: string }> }
 ) {
+  const { authorId } = await params;
   try {
     const session = await auth();
     
@@ -32,7 +33,7 @@ export async function POST(
 
     // Check if author exists
     const author = await prisma.user.findUnique({
-      where: { id: params.authorId },
+      where: { id: authorId },
     });
 
     if (!author) {
@@ -47,7 +48,7 @@ export async function POST(
     const hashedPassword = await hashPassword(newPassword);
     
     await prisma.user.update({
-      where: { id: params.authorId },
+      where: { id: authorId },
       data: { password: hashedPassword },
     });
 

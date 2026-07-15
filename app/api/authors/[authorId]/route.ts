@@ -4,8 +4,9 @@ import { prisma } from '@/lib/db';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { authorId: string } }
+  { params }: { params: Promise<{ authorId: string }> }
 ) {
+  const { authorId } = await params;
   try {
     const session = await auth();
     
@@ -18,7 +19,7 @@ export async function PATCH(
     }
 
     const author = await prisma.user.findUnique({
-      where: { id: params.authorId },
+      where: { id: authorId },
     });
 
     if (!author) {
@@ -33,7 +34,7 @@ export async function PATCH(
     const { isActive, name, email } = body;
 
     const updatedAuthor = await prisma.user.update({
-      where: { id: params.authorId },
+      where: { id: authorId },
       data: {
         ...(isActive !== undefined && { isActive }),
         ...(name && { name }),
@@ -60,6 +61,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { authorId: string } }
 ) {
+  const { authorId } = await params;
   try {
     const session = await auth();
     
@@ -72,7 +74,7 @@ export async function DELETE(
     }
 
     const author = await prisma.user.findUnique({
-      where: { id: params.authorId },
+      where: { id: authorId },
     });
 
     if (!author) {
@@ -85,7 +87,7 @@ export async function DELETE(
 
     // Delete the author (cascade will handle related data)
     await prisma.user.delete({
-      where: { id: params.authorId },
+      where: { id: authorId },
     });
 
     return NextResponse.json({ message: 'Author deleted successfully' });

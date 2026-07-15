@@ -5,8 +5,9 @@ import { uploadImage, deleteFile } from '@/lib/file-upload';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { bookId: string } }
+  { params }: { params: Promise<{ bookId: string }> }
 ) {
+  const { bookId } = await params;
   try {
     const session = await auth();
     if (!session?.user) {
@@ -14,7 +15,7 @@ export async function POST(
     }
 
     const book = await prisma.book.findUnique({
-      where: { id: params.bookId },
+      where: { id: bookId },
     });
 
     if (!book || book.deletedAt) {
@@ -38,14 +39,14 @@ export async function POST(
     }
 
     // Upload new image
-    const uploadResult = await uploadImage(file, params.bookId, 'cover');
+    const uploadResult = await uploadImage(file, bookId, 'cover');
     if (!uploadResult.success) {
       return NextResponse.json({ error: uploadResult.error }, { status: 400 });
     }
 
     // Update book with new cover image path
     const updatedBook = await prisma.book.update({
-      where: { id: params.bookId },
+      where: { id: bookId },
       data: {
         coverImage: uploadResult.filePath!,
         version: { increment: 1 },
@@ -55,7 +56,7 @@ export async function POST(
     // Mark for republishing if it was published
     if (book.status === 'PUBLISHED') {
       await prisma.book.update({
-        where: { id: params.bookId },
+        where: { id: bookId },
         data: { status: 'UNPUBLISHED_CHANGES' },
       });
     }

@@ -58,6 +58,7 @@ export function PageManager({
     );
     setPages(updatedPages);
     notifyParent(updatedPages);
+    toast.success('Time updated successfully.');
   };
 
   // Sync local state when parent updates the pages prop
@@ -86,6 +87,7 @@ export function PageManager({
           const updatedPages = [...pages, newPage];
           setPages(updatedPages);
           notifyParent(updatedPages);
+          toast.success('Page added successfully.');
         } else {
           const error = await response.json();
           toast.error(error.error || 'Failed to add page');
@@ -118,6 +120,7 @@ export function PageManager({
         const updatedPages = [...pages, newPage];
         setPages(updatedPages);
         notifyParent(updatedPages);
+        toast.success('Page added successfully.');
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to upload image');
@@ -152,6 +155,7 @@ export function PageManager({
         setEditingPageId(null);
         setEditContent('');
         notifyParent(updatedPages);
+        toast.success('Page updated successfully.');
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to update page');
@@ -229,6 +233,7 @@ export function PageManager({
         // Update local state with the reordered array
         setPages(newPages);
         notifyParent(newPages);
+        toast.success('Pages reordered successfully.');
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to reorder pages');
@@ -265,12 +270,13 @@ export function PageManager({
         );
         setPages(updatedPages);
         notifyParent(updatedPages);
+        toast.success('Image changed successfully.');
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Failed to replace image');
+        toast.error(error.error || 'Failed to change image');
       }
     } catch (error) {
-      console.error('Error replacing image:', error);
+      console.error('Error changing image:', error);
       toast.error('An error occurred');
     } finally {
       setLoading(null);

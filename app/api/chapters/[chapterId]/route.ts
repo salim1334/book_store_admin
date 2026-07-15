@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/db';
+import type { ChapterText, ChapterPage } from '@prisma/client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { chapterId: string } }
+  { params }: { params: Promise<{ chapterId: string }> }
 ) {
-  const chapterId = params.chapterId;
+  const { chapterId } = await params;
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -44,9 +45,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { chapterId: string } }
+  { params }: { params: Promise<{ chapterId: string }> }
 ) {
-  const chapterId = params.chapterId;
+  const { chapterId } = await params;
   try {
     const session = await auth();
     if (!session?.user) {
@@ -81,37 +82,67 @@ export async function PUT(
         include: { book: true },
       });
 
-      // 2. Update Pages (Text or Image)
-      const pageModel = newChapter.book.type === 'TEXT' ? tx.chapterText : tx.chapterPage;
-      const existingPages = await (pageModel as any).findMany({
-        where: { chapterId: chapterId },
-      });
+      // 2. Update Pages (Text or Image) in a type-safe way
+      const incomingPageIds = new Set(pages.map((p: { id: string }) => p.id));
 
-      const incomingPageIds = new Set(pages.map((p: any) => p.id));
-      const pagesToDelete = existingPages.filter((p: any) => !incomingPageIds.has(p.id));
+      if (newChapter.book.type === 'TEXT') {
+        const existingPages = await tx.chapterText.findMany({ where: { chapterId } });
+        const pagesToDelete = existingPages.filter((p) => !incomingPageIds.has(p.id));
 
-      for (const page of pagesToDelete) {
-        await (pageModel as any).delete({ where: { id: page.id } });
-      }
+        for (const page of pagesToDelete) {
+          await tx.chapterText.delete({ where: { id: page.id } });
+        }
 
-      for (let i = 0; i < pages.length; i++) {
-        const page = pages[i];
-        await (pageModel as any).upsert({
-          where: { id: page.id },
-          create: {
-            ...page,
-            orderIndex: i,
-            chapterId: chapterId,
-            authorId: session.user.id,
-          },
-          update: {
-            content: page.content,
-            imagePath: page.imagePath,
-            orderIndex: i,
-            audioStartTime: page.audioStartTime,
-            audioEndTime: page.audioEndTime,
-          },
-        });
+        for (let i = 0; i < pages.length; i++) {
+          const pageData = pages[i];
+          await tx.chapterText.upsert({
+            where: { id: pageData.id },
+            create: {
+              id: pageData.id,
+              content: pageData.content || '',
+              orderIndex: i,
+              chapterId: chapterId,
+              authorId: session.user.id,
+              audioStartTime: pageData.audioStartTime,
+              audioEndTime: pageData.audioEndTime,
+            },
+            update: {
+              content: pageData.content || '',
+              orderIndex: i,
+              audioStartTime: pageData.audioStartTime,
+              audioEndTime: pageData.audioEndTime,
+            },
+          });
+        }
+      } else if (newChapter.book.type === 'IMAGE') {
+        const existingPages = await tx.chapterPage.findMany({ where: { chapterId } });
+        const pagesToDelete = existingPages.filter((p) => !incomingPageIds.has(p.id));
+
+        for (const page of pagesToDelete) {
+          await tx.chapterPage.delete({ where: { id: page.id } });
+        }
+
+        for (let i = 0; i < pages.length; i++) {
+          const pageData = pages[i];
+          await tx.chapterPage.upsert({
+            where: { id: pageData.id },
+            create: {
+              id: pageData.id,
+              imagePath: pageData.imagePath || '',
+              orderIndex: i,
+              chapterId: chapterId,
+              authorId: session.user.id,
+              audioStartTime: pageData.audioStartTime,
+              audioEndTime: pageData.audioEndTime,
+            },
+            update: {
+              imagePath: pageData.imagePath || '',
+              orderIndex: i,
+              audioStartTime: pageData.audioStartTime,
+              audioEndTime: pageData.audioEndTime,
+            },
+          });
+        }
       }
 
       // 3. Update Audio
@@ -172,12 +203,12 @@ export async function PUT(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { chapterId: string } }
+  { params }: { params: Promise<{ chapterId: string }> }
 ) {
-  const chapterId = params.chapterId;
+  const { chapterId } = await params;
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -228,12 +259,12 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { chapterId: string } }
+  { params }: { params: Promise<{ chapterId: string }> }
 ) {
-  const chapterId = params.chapterId;
+  const { chapterId } = await params;
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

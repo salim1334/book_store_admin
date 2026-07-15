@@ -56,6 +56,7 @@ export function ChapterEditor({ chapterId }: ChapterEditorProps) {
       setError(null);
     } catch (err: any) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -95,6 +96,7 @@ export function ChapterEditor({ chapterId }: ChapterEditorProps) {
     const errorMsg = validateChapter();
     if (errorMsg) {
       setValidationError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
     setValidationError(null);
@@ -130,30 +132,37 @@ export function ChapterEditor({ chapterId }: ChapterEditorProps) {
   }, [chapter, title, validateChapter, router]);
 
   // Delete handler
-  const handleDelete = useCallback(async () => {
-    if (
-      !confirm(
-        'Are you sure you want to delete this chapter? This will also delete all pages and audio. This action cannot be undone.'
-      )
-    ) {
-      return;
-    }
-    setDeleting(true);
-    try {
-      const response = await fetch(`/api/chapters/${chapter.id}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        router.push(`/dashboard/books/${chapter.bookId}`);
-      } else {
-        alert('Failed to delete chapter');
-      }
-    } catch (error) {
-      console.error('Error deleting chapter:', error);
-      alert('An error occurred');
-    } finally {
-      setDeleting(false);
-    }
+  const handleDelete = useCallback(() => {
+    toast.error('Are you sure you want to delete this chapter?', {
+      description: 'This will also delete all pages and audio. This action cannot be undone.',
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          setDeleting(true);
+          try {
+            const response = await fetch(`/api/chapters/${chapter.id}`, {
+              method: 'DELETE',
+            });
+            if (response.ok) {
+              router.push(`/dashboard/books/${chapter.bookId}`);
+              toast.success('Chapter deleted successfully!');
+            } else {
+              const error = await response.json();
+              toast.error(error.error || 'Failed to delete chapter');
+            }
+          } catch (error) {
+            console.error('Error deleting chapter:', error);
+            toast.error('An error occurred during deletion');
+          } finally {
+            setDeleting(false);
+          }
+        },
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => {}, // Does nothing, just dismisses the toast
+      },
+    });
   }, [chapter, router]);
 
   // ---- REFRESH HANDLER: updates local state with data from children ----

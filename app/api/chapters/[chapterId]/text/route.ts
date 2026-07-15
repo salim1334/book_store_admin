@@ -4,8 +4,9 @@ import { prisma } from '@/lib/db';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { chapterId: string } }
+  { params }: { params: Promise<{ chapterId: string }> }
 ) {
+  const { chapterId } = await params;
   try {
     const session = await auth();
     
@@ -22,7 +23,7 @@ export async function POST(
 
     // Verify chapter ownership
     const chapter = await prisma.chapter.findUnique({
-      where: { id: params.chapterId },
+      where: { id: chapterId },
       include: { book: true },
     });
 
@@ -36,7 +37,7 @@ export async function POST(
 
     // Check if text content already exists
     const existingText = await prisma.chapterText.findFirst({
-      where: { chapterId: params.chapterId },
+      where: { chapterId: chapterId },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -55,7 +56,7 @@ export async function POST(
       // Create new text
       chapterText = await prisma.chapterText.create({
         data: {
-          chapterId: params.chapterId,
+          chapterId: chapterId,
           authorId: session.user.id,
           content,
         },

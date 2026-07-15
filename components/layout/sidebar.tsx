@@ -1,3 +1,4 @@
+// components/layout/sidebar.tsx
 'use client';
 
 import Link from 'next/link';
@@ -11,15 +12,24 @@ import {
   LogOut,
   FileText,
   Shield,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface SidebarProps {
   userRole: string;
   onLogout: () => void;
+  collapsed: boolean;
+  onToggle: () => void;
 }
 
-export function Sidebar({ userRole, onLogout }: SidebarProps) {
+export function Sidebar({
+  userRole,
+  onLogout,
+  collapsed,
+  onToggle,
+}: SidebarProps) {
   const pathname = usePathname();
 
   const authorNavItems = [
@@ -39,26 +49,30 @@ export function Sidebar({ userRole, onLogout }: SidebarProps) {
     userRole === 'SUPER_ADMIN' ? superAdminNavItems : authorNavItems;
 
   return (
-    <aside className="flex h-full w-64 flex-col bg-white border-r border-gray-200">
-      {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-gray-200 px-6">
-        <div className=" bg-emerald-600 p-2 shadow-sm">
+    <aside
+      className={cn(
+        'fixed left-0 top-0 z-40 flex h-full flex-col bg-white border-r border-gray-200 transition-all duration-300',
+        collapsed ? 'w-14' : 'w-64'
+      )}
+    >
+      {/* Logo area */}
+      <div className="flex h-16 items-center gap-3 border-b border-gray-200 px-3">
+        <div className="bg-emerald-600 p-2 shadow-sm shrink-0">
           <BookOpen className="h-6 w-6 text-white" />
         </div>
-
-        <div>
-          <h1 className="text-lg font-bold text-gray-900">Book Store</h1>
-          <p className="text-xs text-gray-500">Admin Panel</p>
-        </div>
+        {!collapsed && (
+          <div className="overflow-hidden">
+            <h1 className="text-lg font-bold text-gray-900">Book Store</h1>
+            <p className="text-xs text-gray-500">Admin Panel</p>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-2 px-4 py-5">
+      <nav className="flex-1 space-y-2 px-2 py-5">
         {navItems.map((item) => {
           const Icon = item.icon;
-
-          const isActive =
-            pathname === item.href;
+          const isActive = pathname === item.href;
 
           return (
             <Link
@@ -68,18 +82,22 @@ export function Sidebar({ userRole, onLogout }: SidebarProps) {
                 'flex items-center gap-3 rounded px-4 py-3 text-sm font-medium transition-all duration-200',
                 isActive
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm border-l-4'
-                  : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 border'
+                  : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 border',
+                collapsed && 'justify-center px-2'
               )}
+              title={collapsed ? item.label : undefined}
             >
-              <Icon className="h-5 w-5" />
-              <span>{item.label}</span>
+              <Icon
+                className={cn('h-5 w-5 shrink-0', collapsed && 'h-5 w-5')}
+              />
+              {!collapsed && <span>{item.label}</span>}
             </Link>
           );
         })}
       </nav>
 
       {/* Super Admin Badge */}
-      {userRole === 'SUPER_ADMIN' && (
+      {userRole === 'SUPER_ADMIN' && !collapsed && (
         <div className="border-t border-gray-200 px-4 py-4">
           <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-3">
             <Shield className="h-4 w-4 text-emerald-600" />
@@ -90,15 +108,38 @@ export function Sidebar({ userRole, onLogout }: SidebarProps) {
         </div>
       )}
 
+      {/* Collapse toggle button */}
+      <div className="border-t border-gray-200 p-2">
+        <Button
+          variant="ghost"
+          onClick={onToggle}
+          className="w-full justify-center rounded-xl text-gray-500 hover:bg-gray-100"
+          size="sm"
+        >
+          {collapsed ? (
+            <ChevronRight className="h-5 w-5" />
+          ) : (
+            <>
+              <ChevronLeft className="h-5 w-5" />
+              <span className="ml-2">Collapse</span>
+            </>
+          )}
+        </Button>
+      </div>
+
       {/* Logout */}
-      <div className="border-t border-gray-200 p-4">
+      <div className="border-t border-gray-200 p-2">
         <Button
           variant="ghost"
           onClick={onLogout}
-          className="w-full justify-start rounded-xl text-red-600 hover:bg-red-50 hover:text-red-600"
+          className={cn(
+            'w-full rounded-xl text-red-600 hover:bg-red-50 hover:text-red-600',
+            collapsed ? 'justify-center px-2' : 'justify-start'
+          )}
+          title={collapsed ? 'Sign Out' : undefined}
         >
-          <LogOut className="mr-3 h-5 w-5" />
-          Sign Out
+          <LogOut className={cn('h-5 w-5 shrink-0', !collapsed && 'mr-3')} />
+          {!collapsed && 'Sign Out'}
         </Button>
       </div>
     </aside>

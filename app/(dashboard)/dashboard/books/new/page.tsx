@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -80,7 +86,9 @@ export default function NewBookPage() {
                 id="title"
                 placeholder="Enter book title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 required
                 disabled={loading}
               />
@@ -93,7 +101,9 @@ export default function NewBookPage() {
                 className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Enter book description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 disabled={loading}
               />
             </div>
@@ -107,7 +117,7 @@ export default function NewBookPage() {
                   disabled={loading}
                   className={`p-4 border-2 rounded-lg text-left transition-all ${
                     formData.type === 'TEXT'
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-green-600 bg-green-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -122,7 +132,7 @@ export default function NewBookPage() {
                   disabled={loading}
                   className={`p-4 border-2 rounded-lg text-left transition-all ${
                     formData.type === 'IMAGE'
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-green-600 bg-green-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -135,17 +145,17 @@ export default function NewBookPage() {
             </div>
 
             <div className="flex items-center space-x-2">
+              {/* Hide this input */}
               <input
-                type="checkbox"
+                type="hidden"
                 id="isBundled"
                 checked={formData.isBundled}
-                onChange={(e) => setFormData({ ...formData, isBundled: e.target.checked })}
+                onChange={(e) =>
+                  setFormData({ ...formData, isBundled: e.target.checked })
+                }
                 disabled={loading}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
               />
-              <Label htmlFor="isBundled" className="font-normal cursor-pointer">
-                Bundle this book with the mobile app (available offline immediately)
-              </Label>
             </div>
 
             <div className="flex gap-3 pt-4 border-t">
