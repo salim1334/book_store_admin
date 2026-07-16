@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, UserX, UserCheck, Loader2, Users as UsersIcon } from 'lucide-react';
+import {
+  Plus,
+  UserX,
+  UserCheck,
+  Loader2,
+  Users as UsersIcon,
+} from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { ResetPasswordDialog } from '@/components/authors/reset-password-dialog';
@@ -40,9 +46,13 @@ export default function AuthorsPage() {
     }
   };
 
-  const handleToggleStatus = async (authorId: string, authorName: string, currentStatus: boolean) => {
+  const handleToggleStatus = async (
+    authorId: string,
+    authorName: string,
+    currentStatus: boolean,
+  ) => {
     const action = currentStatus ? 'suspend' : 'activate';
-    
+
     toast(`Are you sure you want to ${action} ${authorName}?`, {
       action: {
         label: 'Confirm',
@@ -56,17 +66,26 @@ export default function AuthorsPage() {
             });
 
             if (response.ok) {
-              setAuthors(authors.map(author =>
-                author.id === authorId ? { ...author, isActive: !currentStatus } : author
-              ));
+              setAuthors(
+                authors.map((author) =>
+                  author.id === authorId
+                    ? { ...author, isActive: !currentStatus }
+                    : author,
+                ),
+              );
               toast.success(`Author ${action}ed successfully.`);
             } else {
               const error = await response.json();
               toast.error(error.error || `Failed to ${action} author.`);
             }
           } catch (error) {
-            console.error(`Error toggling status for author ${authorId}:`, error);
-            toast.error(`An error occurred while trying to ${action} the author.`);
+            console.error(
+              `Error toggling status for author ${authorId}:`,
+              error,
+            );
+            toast.error(
+              `An error occurred while trying to ${action} the author.`,
+            );
           } finally {
             setUpdatingStatusId(null);
           }
@@ -74,9 +93,7 @@ export default function AuthorsPage() {
       },
       cancel: {
         label: 'Cancel',
-        onClick: () => {
-          
-        },
+        onClick: () => {},
       },
     });
   };
@@ -95,15 +112,17 @@ export default function AuthorsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Authors</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Authors
+          </h1>
           <p className="text-gray-500 mt-1">
             Manage author accounts and permissions
           </p>
         </div>
-        <Link href="/dashboard/authors/new">
-          <Button>
+        <Link href="/dashboard/authors/new" className="w-full md:w-auto">
+          <Button className="w-full md:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             Create Author
           </Button>
@@ -118,7 +137,8 @@ export default function AuthorsPage() {
             </div>
             <h3 className="text-xl font-semibold mb-2">No authors yet</h3>
             <p className="text-gray-500 text-center max-w-md mb-6">
-              Get started by creating your first author account. They will receive an invite email to set up their password.
+              Get started by creating your first author account. They will
+              receive an invite email to set up their password.
             </p>
             <Link href="/dashboard/authors/new">
               <Button>
@@ -133,14 +153,16 @@ export default function AuthorsPage() {
           {authors.map((author) => (
             <Card key={author.id}>
               <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                    <div className="h-12 w-12 shrink-0 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg">
                       {author.name.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg">{author.name}</h3>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-lg truncate">
+                          {author.name}
+                        </h3>
                         {author.isActive ? (
                           <Badge className="bg-green-100 text-green-800 border-green-300">
                             Active
@@ -151,24 +173,35 @@ export default function AuthorsPage() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-gray-500">{author.email}</p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {author.email}
+                      </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Joined {formatDate(author.createdAt)} • {author._count.books} books
+                        Joined {formatDate(author.createdAt)} •{' '}
+                        {author._count.books} books
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <ResetPasswordDialog
                       authorId={author.id}
                       authorName={author.name}
                       authorEmail={author.email}
                       onSuccess={fetchAuthors}
                     />
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className={author.isActive ? 'text-red-600' : 'text-green-600'}
-                      onClick={() => handleToggleStatus(author.id, author.name, author.isActive)}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={
+                        author.isActive ? 'text-red-600' : 'text-green-600'
+                      }
+                      onClick={() =>
+                        handleToggleStatus(
+                          author.id,
+                          author.name,
+                          author.isActive,
+                        )
+                      }
                       disabled={updatingStatusId === author.id}
                     >
                       {updatingStatusId === author.id ? (

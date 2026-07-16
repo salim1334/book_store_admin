@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { BookOpen, Edit, Trash2, Loader2 } from 'lucide-react';
@@ -104,8 +110,11 @@ export function BookCard({ book }: { book: any }) {
             </div>
           )}
 
-          <div className="flex gap-2 pt-3 border-t">
-            <Link href={`/dashboard/books/${book.id}`} className="flex-1">
+          <div className="flex flex-wrap gap-2 pt-3 border-t">
+            <Link
+              href={`/dashboard/books/${book.id}`}
+              className="flex-1 min-w-0"
+            >
               <Button variant="outline" className="w-full" size="sm">
                 <Edit className="mr-2 h-4 w-4" />
                 Edit

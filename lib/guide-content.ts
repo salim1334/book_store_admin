@@ -100,7 +100,7 @@ export const guideSections: GuideSection[] = [
     title: 'Video Tutorials',
     body: '',
     videos: [
-      { title: 'Compressing images for mobile', youtubeId: 'dQw4w9WgXcQ' },
+      { title: 'Compressing images for mobile', youtubeId: 'Pjnqm6L2BZ4' },
     ],
   },
 ];

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -11,12 +12,31 @@ import {
 } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Music, Upload, Trash2, Loader2, Play, Pause } from 'lucide-react';
+import {
+  uploadLimits,
+  MAX_AUDIO_SIZE_BYTES,
+  isSupportedAudioType,
+} from '@/lib/config/upload-limits';
+import {
+  xhrUpload,
+  formatBytes,
+  formatEta,
+  type UploadProgress,
+} from '@/lib/upload/xhr-upload';
 
 interface AudioUploaderProps {
   chapterId: string;
   audioPath?: string | null;
   onUpdate: (data: { audioPath: string | null }) => void;
 }
+
+const audioTypeLabels: Record<string, string> = {
+  'audio/mpeg': 'MP3',
+  'audio/mp4': 'MP4/M4A',
+  'audio/wav': 'WAV',
+  'audio/x-m4a': 'M4A',
+  'audio/aac': 'AAC',
+};
 
 export function AudioUploader({
   chapterId,
@@ -26,9 +46,27 @@ export function AudioUploader({
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [currentAudioPath, setCurrentAudioPath] = useState<string | null>(
-    audioPath || null
+    audioPath || null,
   );
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(
+    null,
+  );
+  const [uploadError, setUploadError] = useState<{
+    message: string;
+    guideHref: string;
+  } | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  const supportedAudioLabels = uploadLimits.supportedAudioTypes
+    .map((t) => audioTypeLabels[t] || t)
+    .join(', ');
+  const maxAudioLabel = `${uploadLimits.audioMaxSizeMb}MB`;
+  const acceptAudioTypes = uploadLimits.supportedAudioTypes.join(',');
+
+  const clearUploadFeedback = () => {
+    setUploadProgress(null);
+    setUploadError(null);
+  };
 
   // Sync local state when parent updates the audioPath prop
   useEffect(() => {
@@ -39,28 +77,59 @@ export function AudioUploader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('audio', file);
+    clearUploadFeedback();
 
-      const response = await fetch(`/api/chapters/${chapterId}/audio`, {
+    if (!isSupportedAudioType(file.type)) {
+      const message = `Invalid file type (${file.type}). Supported: ${supportedAudioLabels}`;
+      setUploadError({
+        message,
+        guideHref: '/dashboard/guide#preparing-audio',
+      });
+      toast.error(message);
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_AUDIO_SIZE_BYTES) {
+      const message = `File too large (${formatBytes(file.size)}). Max: ${maxAudioLabel}`;
+      setUploadError({
+        message,
+        guideHref: '/dashboard/guide#preparing-audio',
+      });
+      toast.error(message);
+      e.target.value = '';
+      return;
+    }
+
+    setLoading(true);
+    setUploadProgress({
+      percent: 0,
+      loaded: 0,
+      total: file.size,
+      etaSeconds: 0,
+    });
+
+    try {
+      const data = await xhrUpload<{ audioPath: string }>({
         method: 'POST',
-        body: formData,
+        endpoint: `/api/chapters/${chapterId}/audio`,
+        file,
+        fieldName: 'audio',
+        onProgress: setUploadProgress,
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const newPath = data.audioPath; // adjust if your API returns a different field
-        setCurrentAudioPath(newPath);
-        onUpdate({ audioPath: newPath });
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to upload audio');
-      }
-    } catch (error) {
+      setCurrentAudioPath(data.audioPath);
+      onUpdate({ audioPath: data.audioPath });
+      toast.success('Audio uploaded successfully.');
+      clearUploadFeedback();
+    } catch (error: any) {
       console.error('Error uploading audio:', error);
-      toast.error('An error occurred');
+      const message = error?.message || 'Failed to upload audio';
+      setUploadError({
+        message,
+        guideHref: '/dashboard/guide#preparing-audio',
+      });
+      toast.error(message);
     } finally {
       setLoading(false);
       e.target.value = '';
@@ -123,23 +192,25 @@ export function AudioUploader({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="min-w-0">
             <CardTitle className="flex items-center gap-2">
-              <Music className="h-5 w-5" />
+              <Music className="h-5 w-5 shrink-0" />
               Audio Narration
             </CardTitle>
             <CardDescription>
-              Add optional audio narration for this chapter (MP3, M4A, or WAV)
+              Add optional audio narration. Supported formats:{' '}
+              {supportedAudioLabels} (max {maxAudioLabel}).
             </CardDescription>
           </div>
           {!currentAudioPath && (
-            <label htmlFor="audio-upload">
+            <label htmlFor="audio-upload" className="shrink-0">
               <Button
                 variant="outline"
                 disabled={loading}
                 onClick={() => document.getElementById('audio-upload')?.click()}
                 type="button"
+                className="w-full sm:w-auto"
               >
                 {loading ? (
                   <>
@@ -156,7 +227,7 @@ export function AudioUploader({
               <input
                 id="audio-upload"
                 type="file"
-                accept="audio/mpeg,audio/mp4,audio/wav,audio/x-m4a"
+                accept={acceptAudioTypes}
                 onChange={handleUpload}
                 className="hidden"
               />
@@ -164,13 +235,50 @@ export function AudioUploader({
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {uploadError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="text-sm font-medium text-red-800">
+              {uploadError.message}
+            </p>
+            <p className="mt-1 text-sm text-red-700">
+              Try compressing or re-exporting the file, then{' '}
+              <Link href={uploadError.guideHref} className="underline">
+                check the Content Guide
+              </Link>{' '}
+              for recommended tools and tips.
+            </p>
+          </div>
+        )}
+
+        {uploadProgress && (
+          <div className="rounded-lg border p-4 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">Uploading audio...</span>
+              <span className="text-gray-500">{uploadProgress.percent}%</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 rounded-full transition-all"
+                style={{ width: `${uploadProgress.percent}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span>
+                {formatBytes(uploadProgress.loaded)} /{' '}
+                {formatBytes(uploadProgress.total)}
+              </span>
+              <span>~{formatEta(uploadProgress.etaSeconds)} left</span>
+            </div>
+          </div>
+        )}
+
         {!currentAudioPath ? (
           <div className="text-center py-8 border-2 border-dashed rounded-lg">
             <Music className="mx-auto h-10 w-10 text-gray-400" />
             <p className="mt-2 text-sm text-gray-500">No audio narration yet</p>
             <p className="text-xs text-gray-400 mt-1">
-              Supported formats: MP3, M4A, WAV (max 50MB)
+              Supported formats: {supportedAudioLabels} (max {maxAudioLabel})
             </p>
           </div>
         ) : (
@@ -196,7 +304,7 @@ export function AudioUploader({
                   {currentAudioPath}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <label htmlFor="audio-replace">
                   <Button
                     variant="outline"
@@ -222,7 +330,7 @@ export function AudioUploader({
                   <input
                     id="audio-replace"
                     type="file"
-                    accept="audio/mpeg,audio/mp4,audio/wav,audio/x-m4a"
+                    accept={acceptAudioTypes}
                     onChange={handleUpload}
                     className="hidden"
                   />

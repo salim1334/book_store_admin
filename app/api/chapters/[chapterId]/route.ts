@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/db';
+import { validateAudioTimings } from '@/lib/audio-timing';
 import type { ChapterText, ChapterPage } from '@prisma/client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ chapterId: string }> }
+  { params }: { params: Promise<{ chapterId: string }> },
 ) {
   const { chapterId } = await params;
   try {
@@ -32,20 +33,26 @@ export async function GET(
     }
 
     // Check authorization
-    if (session.user.role !== 'SUPER_ADMIN' && chapter.authorId !== session.user.id) {
+    if (
+      session.user.role !== 'SUPER_ADMIN' &&
+      chapter.authorId !== session.user.id
+    ) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     return NextResponse.json(chapter);
   } catch (error) {
     console.error('Error fetching chapter:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ chapterId: string }> }
+  { params }: { params: Promise<{ chapterId: string }> },
 ) {
   const { chapterId } = await params;
   try {
@@ -63,12 +70,21 @@ export async function PUT(
       return NextResponse.json({ error: 'Chapter not found' }, { status: 404 });
     }
 
-    if (session.user.role !== 'SUPER_ADMIN' && chapter.authorId !== session.user.id) {
+    if (
+      session.user.role !== 'SUPER_ADMIN' &&
+      chapter.authorId !== session.user.id
+    ) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
     const { title, pages, audioPath } = body;
+
+    const hasAudio = !!audioPath;
+    const timingError = validateAudioTimings(pages, hasAudio);
+    if (timingError) {
+      return NextResponse.json({ error: timingError }, { status: 400 });
+    }
 
     // Use a transaction to ensure all updates are atomic
     const updatedChapter = await prisma.$transaction(async (tx) => {
@@ -86,8 +102,12 @@ export async function PUT(
       const incomingPageIds = new Set(pages.map((p: { id: string }) => p.id));
 
       if (newChapter.book.type === 'TEXT') {
-        const existingPages = await tx.chapterText.findMany({ where: { chapterId } });
-        const pagesToDelete = existingPages.filter((p) => !incomingPageIds.has(p.id));
+        const existingPages = await tx.chapterText.findMany({
+          where: { chapterId },
+        });
+        const pagesToDelete = existingPages.filter(
+          (p) => !incomingPageIds.has(p.id),
+        );
 
         for (const page of pagesToDelete) {
           await tx.chapterText.delete({ where: { id: page.id } });
@@ -103,20 +123,24 @@ export async function PUT(
               orderIndex: i,
               chapterId: chapterId,
               authorId: session.user.id,
-              audioStartTime: pageData.audioStartTime,
-              audioEndTime: pageData.audioEndTime,
+              audioStartTime: hasAudio ? pageData.audioStartTime : null,
+              audioEndTime: hasAudio ? pageData.audioEndTime : null,
             },
             update: {
               content: pageData.content || '',
               orderIndex: i,
-              audioStartTime: pageData.audioStartTime,
-              audioEndTime: pageData.audioEndTime,
+              audioStartTime: hasAudio ? pageData.audioStartTime : null,
+              audioEndTime: hasAudio ? pageData.audioEndTime : null,
             },
           });
         }
       } else if (newChapter.book.type === 'IMAGE') {
-        const existingPages = await tx.chapterPage.findMany({ where: { chapterId } });
-        const pagesToDelete = existingPages.filter((p) => !incomingPageIds.has(p.id));
+        const existingPages = await tx.chapterPage.findMany({
+          where: { chapterId },
+        });
+        const pagesToDelete = existingPages.filter(
+          (p) => !incomingPageIds.has(p.id),
+        );
 
         for (const page of pagesToDelete) {
           await tx.chapterPage.delete({ where: { id: page.id } });
@@ -132,14 +156,14 @@ export async function PUT(
               orderIndex: i,
               chapterId: chapterId,
               authorId: session.user.id,
-              audioStartTime: pageData.audioStartTime,
-              audioEndTime: pageData.audioEndTime,
+              audioStartTime: hasAudio ? pageData.audioStartTime : null,
+              audioEndTime: hasAudio ? pageData.audioEndTime : null,
             },
             update: {
               imagePath: pageData.imagePath || '',
               orderIndex: i,
-              audioStartTime: pageData.audioStartTime,
-              audioEndTime: pageData.audioEndTime,
+              audioStartTime: hasAudio ? pageData.audioStartTime : null,
+              audioEndTime: hasAudio ? pageData.audioEndTime : null,
             },
           });
         }
@@ -197,13 +221,16 @@ export async function PUT(
     return NextResponse.json(finalChapter);
   } catch (error) {
     console.error('Error saving chapter:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ chapterId: string }> }
+  { params }: { params: Promise<{ chapterId: string }> },
 ) {
   const { chapterId } = await params;
   try {
@@ -223,7 +250,10 @@ export async function PATCH(
     }
 
     // Check authorization
-    if (session.user.role !== 'SUPER_ADMIN' && chapter.authorId !== session.user.id) {
+    if (
+      session.user.role !== 'SUPER_ADMIN' &&
+      chapter.authorId !== session.user.id
+    ) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -253,13 +283,16 @@ export async function PATCH(
     return NextResponse.json(updatedChapter);
   } catch (error) {
     console.error('Error updating chapter:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ chapterId: string }> }
+  { params }: { params: Promise<{ chapterId: string }> },
 ) {
   const { chapterId } = await params;
   try {
@@ -279,7 +312,10 @@ export async function DELETE(
     }
 
     // Check authorization
-    if (session.user.role !== 'SUPER_ADMIN' && chapter.authorId !== session.user.id) {
+    if (
+      session.user.role !== 'SUPER_ADMIN' &&
+      chapter.authorId !== session.user.id
+    ) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -305,6 +341,9 @@ export async function DELETE(
     return NextResponse.json({ message: 'Chapter deleted successfully' });
   } catch (error) {
     console.error('Error deleting chapter:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

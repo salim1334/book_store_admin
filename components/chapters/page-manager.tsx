@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,17 @@ import {
   Upload,
   Loader2,
 } from 'lucide-react';
+import {
+  uploadLimits,
+  MAX_IMAGE_SIZE_BYTES,
+  isSupportedImageType,
+} from '@/lib/config/upload-limits';
+import {
+  xhrUpload,
+  formatBytes,
+  formatEta,
+  type UploadProgress,
+} from '@/lib/upload/xhr-upload';
 
 interface Page {
   id: string;
@@ -36,6 +48,12 @@ interface PageManagerProps {
   onUpdate: (data: { pages: Page[] }) => void;
 }
 
+const imageTypeLabels: Record<string, string> = {
+  'image/jpeg': 'JPEG',
+  'image/png': 'PNG',
+  'image/webp': 'WebP',
+};
+
 export function PageManager({
   bookType,
   pages: initialPages,
@@ -48,13 +66,35 @@ export function PageManager({
   const [loading, setLoading] = useState<string | null>(null);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [uploadProgress, setUploadProgress] = useState<
+    (UploadProgress & { label: string }) | null
+  >(null);
+  const [uploadError, setUploadError] = useState<{
+    message: string;
+    guideHref: string;
+  } | null>(null);
 
-  const handleTimeChange = (pageId: string, field: 'audioStartTime' | 'audioEndTime', value: string) => {
+  const supportedImageLabels = uploadLimits.supportedImageTypes
+    .map((t) => imageTypeLabels[t] || t)
+    .join(', ');
+  const maxImageLabel = `${uploadLimits.imageMaxSizeMb}MB`;
+  const acceptImageTypes = uploadLimits.supportedImageTypes.join(',');
+
+  const clearUploadFeedback = () => {
+    setUploadProgress(null);
+    setUploadError(null);
+  };
+
+  const handleTimeChange = (
+    pageId: string,
+    field: 'audioStartTime' | 'audioEndTime',
+    value: string,
+  ) => {
     const numericValue = value === '' ? null : parseFloat(value);
     if (value !== '' && isNaN(numericValue!)) return; // Ignore invalid input
 
-    const updatedPages = pages.map(p => 
-      p.id === pageId ? { ...p, [field]: numericValue } : p
+    const updatedPages = pages.map((p) =>
+      p.id === pageId ? { ...p, [field]: numericValue } : p,
     );
     setPages(updatedPages);
     notifyParent(updatedPages);
@@ -69,6 +109,16 @@ export function PageManager({
   // Helper: call onUpdate with the current pages array
   const notifyParent = (newPages: Page[]) => {
     onUpdate({ pages: newPages });
+  };
+
+  const validateImageFile = (file: File): string | null => {
+    if (!isSupportedImageType(file.type)) {
+      return `Invalid file type (${file.type}). Supported: ${supportedImageLabels}`;
+    }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      return `File too large (${formatBytes(file.size)}). Max: ${maxImageLabel}`;
+    }
+    return null;
   };
 
   const handleAddPage = async () => {
@@ -105,29 +155,48 @@ export function PageManager({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setLoading('add-image');
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-
-      const response = await fetch(`/api/chapters/${chapterId}/pages`, {
-        method: 'POST',
-        body: formData,
+    clearUploadFeedback();
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setUploadError({
+        message: validationError,
+        guideHref: '/dashboard/guide#preparing-images',
       });
+      toast.error(validationError);
+      e.target.value = '';
+      return;
+    }
 
-      if (response.ok) {
-        const newPage = await response.json(); // expects { id, imagePath, orderIndex }
-        const updatedPages = [...pages, newPage];
-        setPages(updatedPages);
-        notifyParent(updatedPages);
-        toast.success('Page added successfully.');
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to upload image');
-      }
-    } catch (error) {
+    setLoading('add-image');
+    setUploadProgress({
+      percent: 0,
+      loaded: 0,
+      total: file.size,
+      etaSeconds: 0,
+      label: file.name,
+    });
+
+    try {
+      const newPage = await xhrUpload<Page>({
+        method: 'POST',
+        endpoint: `/api/chapters/${chapterId}/pages`,
+        file,
+        fieldName: 'image',
+        onProgress: (p) => setUploadProgress({ ...p, label: file.name }),
+      });
+      const updatedPages = [...pages, newPage];
+      setPages(updatedPages);
+      notifyParent(updatedPages);
+      toast.success('Page added successfully.');
+      clearUploadFeedback();
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      toast.error('An error occurred');
+      const message = error?.message || 'Failed to upload image';
+      setUploadError({
+        message,
+        guideHref: '/dashboard/guide#preparing-images',
+      });
+      toast.error(message);
     } finally {
       setLoading(null);
       e.target.value = '';
@@ -143,13 +212,13 @@ export function PageManager({
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content }),
-        }
+        },
       );
 
       if (response.ok) {
         // Update local state
         const updatedPages = pages.map((p) =>
-          p.id === pageId ? { ...p, content } : p
+          p.id === pageId ? { ...p, content } : p,
         );
         setPages(updatedPages);
         setEditingPageId(null);
@@ -179,7 +248,7 @@ export function PageManager({
               `/api/chapters/${chapterId}/pages/${pageId}`,
               {
                 method: 'DELETE',
-              }
+              },
             );
 
             if (response.ok) {
@@ -250,34 +319,49 @@ export function PageManager({
   };
 
   const handleReplaceImage = async (pageId: string, file: File) => {
+    clearUploadFeedback();
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setUploadError({
+        message: validationError,
+        guideHref: '/dashboard/guide#preparing-images',
+      });
+      toast.error(validationError);
+      return;
+    }
+
     setLoading(pageId);
+    setUploadProgress({
+      percent: 0,
+      loaded: 0,
+      total: file.size,
+      etaSeconds: 0,
+      label: file.name,
+    });
+
     try {
-      const formData = new FormData();
-      formData.append('image', file);
-
-      const response = await fetch(
-        `/api/chapters/${chapterId}/pages/${pageId}`,
-        {
-          method: 'PATCH',
-          body: formData,
-        }
+      const updatedPage = await xhrUpload<{ imagePath: string }>({
+        method: 'PATCH',
+        endpoint: `/api/chapters/${chapterId}/pages/${pageId}`,
+        file,
+        fieldName: 'image',
+        onProgress: (p) => setUploadProgress({ ...p, label: file.name }),
+      });
+      const updatedPages = pages.map((p) =>
+        p.id === pageId ? { ...p, imagePath: updatedPage.imagePath } : p,
       );
-
-      if (response.ok) {
-        const updatedPage = await response.json(); // expects { imagePath, ... }
-        const updatedPages = pages.map((p) =>
-          p.id === pageId ? { ...p, imagePath: updatedPage.imagePath } : p
-        );
-        setPages(updatedPages);
-        notifyParent(updatedPages);
-        toast.success('Image changed successfully.');
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to change image');
-      }
-    } catch (error) {
+      setPages(updatedPages);
+      notifyParent(updatedPages);
+      toast.success('Image changed successfully.');
+      clearUploadFeedback();
+    } catch (error: any) {
       console.error('Error changing image:', error);
-      toast.error('An error occurred');
+      const message = error?.message || 'Failed to change image';
+      setUploadError({
+        message,
+        guideHref: '/dashboard/guide#preparing-images',
+      });
+      toast.error(message);
     } finally {
       setLoading(null);
     }
@@ -296,66 +380,147 @@ export function PageManager({
   // ---- Render logic (unchanged) ----
   if (pages.length === 0) {
     return (
-      <div className="text-center py-8 border-2 border-dashed rounded-lg">
-        {bookType === 'TEXT' ? (
-          <>
-            <FileText className="mx-auto h-10 w-10 text-gray-400" />
-            <p className="mt-2 text-sm text-gray-500">No pages yet</p>
-            <Button
-              onClick={handleAddPage}
-              disabled={loading === 'add-text'}
-              className="mt-4"
-            >
-              {loading === 'add-text' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...
-                </>
-              ) : (
-                <>
-                  <Plus className="mr-2 h-4 w-4" /> Add First Page
-                </>
-              )}
-            </Button>
-          </>
-        ) : (
-          <>
-            <ImageIcon className="mx-auto h-10 w-10 text-gray-400" />
-            <p className="mt-2 text-sm text-gray-500">No images yet</p>
-            <label htmlFor="first-image-upload" className="inline-block mt-4">
+      <div className="space-y-4">
+        {uploadError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="text-sm font-medium text-red-800">
+              {uploadError.message}
+            </p>
+            <p className="mt-1 text-sm text-red-700">
+              Try compressing or re-exporting the file, then{' '}
+              <Link href={uploadError.guideHref} className="underline">
+                check the Content Guide
+              </Link>{' '}
+              for recommended tools and tips.
+            </p>
+          </div>
+        )}
+
+        {uploadProgress && (
+          <div className="rounded-lg border p-4 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium truncate">
+                {uploadProgress.label}
+              </span>
+              <span className="text-gray-500">{uploadProgress.percent}%</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 rounded-full transition-all"
+                style={{ width: `${uploadProgress.percent}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span>
+                {formatBytes(uploadProgress.loaded)} /{' '}
+                {formatBytes(uploadProgress.total)}
+              </span>
+              <span>~{formatEta(uploadProgress.etaSeconds)} left</span>
+            </div>
+          </div>
+        )}
+
+        <div className="text-center py-8 border-2 border-dashed rounded-lg">
+          {bookType === 'TEXT' ? (
+            <>
+              <FileText className="mx-auto h-10 w-10 text-gray-400" />
+              <p className="mt-2 text-sm text-gray-500">No pages yet</p>
               <Button
-                onClick={() =>
-                  document.getElementById('first-image-upload')?.click()
-                }
-                disabled={loading === 'add-image'}
-                type="button"
+                onClick={handleAddPage}
+                disabled={loading === 'add-text'}
+                className="mt-4"
               >
-                {loading === 'add-image' ? (
+                {loading === 'add-text' ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{' '}
-                    Uploading...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...
                   </>
                 ) : (
                   <>
-                    <Upload className="mr-2 h-4 w-4" /> Upload First Image
+                    <Plus className="mr-2 h-4 w-4" /> Add First Page
                   </>
                 )}
               </Button>
-              <input
-                id="first-image-upload"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </label>
-          </>
-        )}
+            </>
+          ) : (
+            <>
+              <ImageIcon className="mx-auto h-10 w-10 text-gray-400" />
+              <p className="mt-2 text-sm text-gray-500">No images yet</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Supported formats: {supportedImageLabels} (max {maxImageLabel})
+              </p>
+              <label htmlFor="first-image-upload" className="inline-block mt-4">
+                <Button
+                  onClick={() =>
+                    document.getElementById('first-image-upload')?.click()
+                  }
+                  disabled={loading === 'add-image'}
+                  type="button"
+                >
+                  {loading === 'add-image' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />{' '}
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" /> Upload First Image
+                    </>
+                  )}
+                </Button>
+                <input
+                  id="first-image-upload"
+                  type="file"
+                  accept={acceptImageTypes}
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+            </>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {uploadError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="text-sm font-medium text-red-800">
+            {uploadError.message}
+          </p>
+          <p className="mt-1 text-sm text-red-700">
+            Try compressing or re-exporting the file, then{' '}
+            <Link href={uploadError.guideHref} className="underline">
+              check the Content Guide
+            </Link>{' '}
+            for recommended tools and tips.
+          </p>
+        </div>
+      )}
+
+      {uploadProgress && (
+        <div className="rounded-lg border p-4 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium truncate">{uploadProgress.label}</span>
+            <span className="text-gray-500">{uploadProgress.percent}%</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+            <div
+              className="h-full bg-emerald-500 rounded-full transition-all"
+              style={{ width: `${uploadProgress.percent}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <span>
+              {formatBytes(uploadProgress.loaded)} /{' '}
+              {formatBytes(uploadProgress.total)}
+            </span>
+            <span>~{formatEta(uploadProgress.etaSeconds)} left</span>
+          </div>
+        </div>
+      )}
+
       {bookType === 'TEXT' ? (
         <>
           {pages.map((page, index) => (
@@ -445,28 +610,52 @@ export function PageManager({
 
                 {hasAudio && (
                   <div className="mt-4 pt-4 border-t">
-                    <h5 className="text-sm font-medium mb-2">Audio Timing (seconds)</h5>
+                    <h5 className="text-sm font-medium mb-2">
+                      Audio Timing (seconds)
+                    </h5>
                     <div className="flex items-center gap-4">
                       <div className="flex-1 space-y-1">
-                        <Label htmlFor={`start-time-${page.id}`} className="text-xs">Start Time</Label>
-                        <Input 
+                        <Label
+                          htmlFor={`start-time-${page.id}`}
+                          className="text-xs"
+                        >
+                          Start Time
+                        </Label>
+                        <Input
                           id={`start-time-${page.id}`}
                           type="number"
                           step="0.1"
                           placeholder="e.g., 0.0"
                           value={page.audioStartTime ?? ''}
-                          onChange={(e) => handleTimeChange(page.id, 'audioStartTime', e.target.value)}
+                          onChange={(e) =>
+                            handleTimeChange(
+                              page.id,
+                              'audioStartTime',
+                              e.target.value,
+                            )
+                          }
                         />
                       </div>
                       <div className="flex-1 space-y-1">
-                        <Label htmlFor={`end-time-${page.id}`} className="text-xs">End Time</Label>
-                        <Input 
+                        <Label
+                          htmlFor={`end-time-${page.id}`}
+                          className="text-xs"
+                        >
+                          End Time
+                        </Label>
+                        <Input
                           id={`end-time-${page.id}`}
                           type="number"
                           step="0.1"
                           placeholder="e.g., 5.5"
                           value={page.audioEndTime ?? ''}
-                          onChange={(e) => handleTimeChange(page.id, 'audioEndTime', e.target.value)}
+                          onChange={(e) =>
+                            handleTimeChange(
+                              page.id,
+                              'audioEndTime',
+                              e.target.value,
+                            )
+                          }
                         />
                       </div>
                     </div>
@@ -495,7 +684,7 @@ export function PageManager({
         </>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {pages.map((page, index) => (
               <div key={page.id} className="relative group">
                 <div className="aspect-3/4 bg-gray-100 rounded-lg border overflow-hidden">
@@ -505,7 +694,7 @@ export function PageManager({
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-wrap justify-end gap-1 max-w-[calc(100%-0.5rem)]">
                   <Button
                     variant="outline"
                     size="sm"
@@ -544,7 +733,7 @@ export function PageManager({
                     <input
                       id={`replace-${page.id}`}
                       type="file"
-                      accept="image/jpeg,image/png,image/webp"
+                      accept={acceptImageTypes}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
@@ -570,30 +759,52 @@ export function PageManager({
                 </p>
                 {hasAudio && (
                   <div className="mt-2 space-y-2">
-                     <div className="space-y-1">
-                        <Label htmlFor={`start-time-${page.id}`} className="text-xs sr-only">Start Time</Label>
-                        <Input 
-                          id={`start-time-${page.id}`}
-                          type="number"
-                          step="0.1"
-                          placeholder="Start (s)"
-                          value={page.audioStartTime ?? ''}
-                          onChange={(e) => handleTimeChange(page.id, 'audioStartTime', e.target.value)}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor={`end-time-${page.id}`} className="text-xs sr-only">End Time</Label>
-                        <Input 
-                          id={`end-time-${page.id}`}
-                          type="number"
-                          step="0.1"
-                          placeholder="End (s)"
-                          value={page.audioEndTime ?? ''}
-                          onChange={(e) => handleTimeChange(page.id, 'audioEndTime', e.target.value)}
-                          className="h-8 text-xs"
-                        />
-                      </div>
+                    <div className="space-y-1">
+                      <Label
+                        htmlFor={`start-time-${page.id}`}
+                        className="text-xs sr-only"
+                      >
+                        Start Time
+                      </Label>
+                      <Input
+                        id={`start-time-${page.id}`}
+                        type="number"
+                        step="0.1"
+                        placeholder="Start (s)"
+                        value={page.audioStartTime ?? ''}
+                        onChange={(e) =>
+                          handleTimeChange(
+                            page.id,
+                            'audioStartTime',
+                            e.target.value,
+                          )
+                        }
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label
+                        htmlFor={`end-time-${page.id}`}
+                        className="text-xs sr-only"
+                      >
+                        End Time
+                      </Label>
+                      <Input
+                        id={`end-time-${page.id}`}
+                        type="number"
+                        step="0.1"
+                        placeholder="End (s)"
+                        value={page.audioEndTime ?? ''}
+                        onChange={(e) =>
+                          handleTimeChange(
+                            page.id,
+                            'audioEndTime',
+                            e.target.value,
+                          )
+                        }
+                        className="h-8 text-xs"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -623,7 +834,7 @@ export function PageManager({
             <input
               id="add-image-upload"
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept={acceptImageTypes}
               onChange={handleImageUpload}
               className="hidden"
             />

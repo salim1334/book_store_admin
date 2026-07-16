@@ -5,6 +5,7 @@ A comprehensive admin panel for managing author-branded book reader applications
 ## 🚀 Features
 
 ### Authentication & Authorization
+
 - ✅ Email/Password authentication
 - ✅ Google OAuth integration
 - ✅ Role-based access control (SuperAdmin & Author)
@@ -13,6 +14,7 @@ A comprehensive admin panel for managing author-branded book reader applications
 - ✅ Secure session management with NextAuth.js
 
 ### Author Dashboard
+
 - ✅ Overview of all books with status indicators
 - ✅ Create and manage books (TEXT or IMAGE types)
 - ✅ Chapter management with drag-and-drop reordering
@@ -23,6 +25,7 @@ A comprehensive admin panel for managing author-branded book reader applications
 - ✅ Draft/Published/Unpublished Changes workflow
 
 ### SuperAdmin Features
+
 - ✅ Author account management
 - ✅ Create and invite new authors
 - ✅ Suspend/activate author accounts
@@ -31,6 +34,7 @@ A comprehensive admin panel for managing author-branded book reader applications
 - ✅ One-click unpublish for moderation
 
 ### Content Management
+
 - ✅ Hierarchical structure: Book → Chapter → Content
 - ✅ Support for TEXT books (written content)
 - ✅ Support for IMAGE books (page-based)
@@ -41,7 +45,7 @@ A comprehensive admin panel for managing author-branded book reader applications
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Next.js 16.2.10 (App Router)
+- **Framework**: Next.js ^15.5.20 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS 4
 - **Database**: MySQL with Prisma ORM
@@ -52,18 +56,20 @@ A comprehensive admin panel for managing author-branded book reader applications
 
 ## 📋 Prerequisites
 
-- Node.js 20+ 
+- Node.js 20+
 - MySQL 8.0+
 - npm or yarn
 
 ## 🔧 Installation
 
 1. **Clone the repository**
+
 ```bash
 cd c:\Users\WINDOWS1\Desktop\Salim_Dev\book_reader\admin_panel
 ```
 
 2. **Install dependencies**
+
 ```bash
 npm install
 ```
@@ -118,6 +124,7 @@ npx prisma studio
 ```
 
 Then create a user with:
+
 - Email: admin@example.com
 - Password: (hashed with bcrypt)
 - Role: SUPER_ADMIN
@@ -126,6 +133,7 @@ Then create a user with:
 ## 🚀 Running the Application
 
 ### Development Mode
+
 ```bash
 npm run dev
 ```
@@ -133,6 +141,7 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Production Build
+
 ```bash
 npm run build
 npm start
@@ -179,6 +188,7 @@ admin_panel/
 ## 🔐 User Roles
 
 ### SuperAdmin
+
 - Create and manage author accounts
 - View all books across all authors
 - Suspend/delete author accounts
@@ -186,6 +196,7 @@ admin_panel/
 - One-click unpublish for moderation
 
 ### Author
+
 - Create and manage their own books
 - Add chapters and content
 - Upload images and audio
@@ -195,6 +206,7 @@ admin_panel/
 ## 📚 Database Schema
 
 ### Key Models
+
 - **User**: Author and SuperAdmin accounts
 - **Book**: Book metadata and settings
 - **Chapter**: Book chapters with ordering
@@ -205,6 +217,7 @@ admin_panel/
 ## 🎨 UI Components
 
 The admin panel uses a custom component library built on top of Radix UI:
+
 - Button
 - Input
 - Label
@@ -218,6 +231,7 @@ The admin panel uses a custom component library built on top of Radix UI:
 ## 🔄 Workflow
 
 ### Creating a Book
+
 1. Author logs in
 2. Navigate to "My Books"
 3. Click "Create Book"
@@ -228,6 +242,7 @@ The admin panel uses a custom component library built on top of Radix UI:
 8. Publish when ready
 
 ### Publishing Flow
+
 - **Draft**: Initial state, not visible to readers
 - **Published**: Live and available to readers
 - **Unpublished Changes**: Edited after publishing, changes not yet live
@@ -247,6 +262,7 @@ The admin panel uses a custom component library built on top of Radix UI:
 ## 📝 API Documentation
 
 ### Books API
+
 - `GET /api/books` - List all books
 - `POST /api/books` - Create a new book
 - `GET /api/books/[id]` - Get book details
@@ -254,12 +270,14 @@ The admin panel uses a custom component library built on top of Radix UI:
 - `DELETE /api/books/[id]` - Soft delete book
 
 ### Chapters API
+
 - `POST /api/chapters` - Create a new chapter
 - `GET /api/chapters/[id]` - Get chapter details
 - `PATCH /api/chapters/[id]` - Update chapter
 - `DELETE /api/chapters/[id]` - Soft delete chapter
 
 ### Authors API (SuperAdmin only)
+
 - `GET /api/authors` - List all authors
 - `POST /api/authors` - Create a new author
 - `PATCH /api/authors/[id]` - Update author
@@ -268,16 +286,19 @@ The admin panel uses a custom component library built on top of Radix UI:
 ## 🐛 Troubleshooting
 
 ### Database Connection Issues
+
 - Verify MySQL is running
 - Check DATABASE_URL in .env
 - Ensure database exists
 
 ### Authentication Issues
+
 - Verify NEXTAUTH_SECRET is set
 - Check NEXTAUTH_URL matches your domain
 - Clear browser cookies and try again
 
 ### Build Errors
+
 - Delete node_modules and package-lock.json
 - Run `npm install` again
 - Clear Next.js cache: `rm -rf .next`

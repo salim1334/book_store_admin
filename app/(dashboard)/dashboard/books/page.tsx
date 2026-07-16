@@ -37,15 +37,17 @@ export default async function BooksPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Books</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            My Books
+          </h1>
           <p className="text-gray-500 mt-1">
             Create and manage your book collection
           </p>
         </div>
-        <Link href="/dashboard/books/new">
-          <Button>
+        <Link href="/dashboard/books/new" className="w-full md:w-auto">
+          <Button className="w-full md:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             Create Book
           </Button>
@@ -60,7 +62,8 @@ export default async function BooksPage() {
             </div>
             <h3 className="text-xl font-semibold mb-2">No books yet</h3>
             <p className="text-gray-500 text-center max-w-md mb-6">
-              Get started by creating your first book. You can add chapters, content, images, and audio to bring your story to life.
+              Get started by creating your first book. You can add chapters,
+              content, images, and audio to bring your story to life.
             </p>
             <Link href="/dashboard/books/new">
               <Button size="lg">

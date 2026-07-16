@@ -35,6 +35,7 @@ export function SidebarProvider({
   onLogout,
 }: SidebarProviderProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // On component mount, read the collapsed state from localStorage
   useEffect(() => {
@@ -53,23 +54,37 @@ export function SidebarProvider({
     });
   };
 
+  const openMobile = () => setMobileOpen(true);
+  const closeMobile = () => setMobileOpen(false);
+
+  const handleLogout = () => {
+    closeMobile();
+    onLogout();
+  };
+
   return (
     <SidebarContext.Provider value={{ collapsed, toggleCollapsed }}>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-dvh overflow-hidden">
         <Sidebar
           userRole={userRole}
-          onLogout={onLogout}
+          onLogout={handleLogout}
           collapsed={collapsed}
           onToggle={toggleCollapsed}
+          mobileOpen={mobileOpen}
+          onMobileClose={closeMobile}
         />
         <div
           className={cn(
-            'flex flex-1 flex-col overflow-hidden transition-all duration-300',
-            collapsed ? 'ml-16' : 'ml-64' // adjust for sidebar width
+            'flex flex-1 flex-col overflow-hidden transition-all duration-300 w-full',
+            collapsed ? 'md:ml-16' : 'md:ml-64', // adjust for sidebar width on desktop
           )}
         >
-          <Header userName={userName!} userEmail={userEmail!} />
-          <main className="flex-1 overflow-y-auto bg-background p-6">
+          <Header
+            userName={userName!}
+            userEmail={userEmail!}
+            onMenuClick={openMobile}
+          />
+          <main className="flex-1 overflow-y-auto bg-background p-4 md:p-6">
             {children}
           </main>
         </div>

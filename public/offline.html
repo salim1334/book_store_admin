@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#059669">
+  <title>Offline — Book Store Admin</title>
+  <style>
+    :root {
+      --bg: #f9fafb;
+      --fg: #111827;
+      --primary: #059669;
+      --muted: #6b7280;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .card {
+      max-width: 22rem;
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    h1 { font-size: 1.25rem; margin: 1rem 0 0.5rem; }
+    p { color: var(--muted); font-size: 0.9375rem; line-height: 1.5; margin: 0 0 1.5rem; }
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 0.625rem 1.25rem;
+      border-radius: 0.5rem;
+      font-size: 0.9375rem;
+      cursor: pointer;
+    }
+    button:active { opacity: 0.9; }
+    svg { display: block; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#059669">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+    <h1>You are offline</h1>
+    <p>Some parts of Book Store Admin need an internet connection. Reconnect and try again.</p>
+    <button onclick="window.location.reload()">Try again</button>
+  </div>
+</body>
+</html>

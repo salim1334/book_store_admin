@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { validateAudioTimings } from '@/lib/audio-timing';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -88,6 +89,12 @@ export function ChapterEditor({ chapterId }: ChapterEditorProps) {
       }
     }
 
+    const hasAudio = !!chapter.audios?.[0]?.audioPath;
+    const timingError = validateAudioTimings(pages, hasAudio);
+    if (timingError) {
+      return timingError;
+    }
+
     return null;
   }, [title, chapter]);
 
@@ -134,7 +141,8 @@ export function ChapterEditor({ chapterId }: ChapterEditorProps) {
   // Delete handler
   const handleDelete = useCallback(() => {
     toast.error('Are you sure you want to delete this chapter?', {
-      description: 'This will also delete all pages and audio. This action cannot be undone.',
+      description:
+        'This will also delete all pages and audio. This action cannot be undone.',
       action: {
         label: 'Delete',
         onClick: async () => {
@@ -200,7 +208,7 @@ export function ChapterEditor({ chapterId }: ChapterEditorProps) {
       // Optionally refresh server components (does not refetch client data)
       router.refresh();
     },
-    [router]
+    [router],
   );
 
   // ---- Now all hooks are defined; we can safely render conditionally ----
@@ -244,23 +252,23 @@ export function ChapterEditor({ chapterId }: ChapterEditorProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
           <Link href={`/dashboard/books/${chapter.bookId}`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+          <div className="min-w-0">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight truncate">
               {chapter.title}
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-gray-500 mt-1 truncate">
               {chapter.book.title} • {chapter.book.type} Book
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
           {lastSaved && (
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <CheckCircle2 className="h-4 w-4 text-green-600" />

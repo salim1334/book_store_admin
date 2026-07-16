@@ -1,0 +1,19 @@
+{
+  "name": "Book Store Admin",
+  "short_name": "BookAdmin",
+  "description": "Admin panel for managing Book Store content",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#059669",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

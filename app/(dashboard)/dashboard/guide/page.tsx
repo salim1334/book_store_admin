@@ -61,11 +61,11 @@ function AudioTimelineDiagram() {
   const total = segments[segments.length - 1].end;
 
   return (
-    <div className="border rounded-lg bg-white p-4">
+    <div className="border rounded-lg bg-white p-4 overflow-x-auto">
       <div className="text-sm font-medium text-gray-900 mb-3">
         Example timeline (1 audio file → sequential page ranges)
       </div>
-      <div className="relative h-12">
+      <div className="relative h-12 m-3 min-w-[300px]">
         {segments.map((s, idx) => {
           const leftPct = (s.start / total) * 100;
           const widthPct = ((s.end - s.start) / total) * 100;
@@ -119,23 +119,14 @@ function getToolHref(toolName: string): string | null {
 }
 
 export default function GuidePage() {
-  const whyCantUploadAnswer =
-    `Your file is rejected because it doesn't match the current upload limits or supported formats.\n\n` +
-    `Image limits:\n` +
-    `- Max size: ${formatMb(MAX_IMAGE_SIZE_BYTES)}\n` +
-    `- Supported types: ${uploadLimits.supportedImageTypes.join(', ')}\n\n` +
-    `Audio limits:\n` +
-    `- Max size: ${formatMb(MAX_AUDIO_SIZE_BYTES)}\n` +
-    `- Supported types: ${uploadLimits.supportedAudioTypes.join(', ')}`;
-
   return (
     <div className="space-y-6">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold">Content Guide</h1>
         <p className="text-gray-600 text-sm">
-          This guide is written for people who are not very familiar with electronics.
-          Follow the steps below slowly, and you will be able to upload images, audio, and
-          timings correctly.
+          This guide is written for people who are not very familiar with
+          electronics. Follow the steps below slowly, and you will be able to
+          upload images, audio, and timings correctly.
         </p>
       </div>
 
@@ -144,16 +135,22 @@ export default function GuidePage() {
           <section
             key={section.id}
             id={section.id}
-            className="scroll-mt-28 space-y-2"
+            className="scroll-mt-24 md:scroll-mt-28 space-y-2"
           >
-            <h2 className="text-lg font-semibold text-gray-900">{section.title}</h2>
-            {section.body && <p className="text-sm text-gray-700">{section.body}</p>}
+            <h2 className="text-lg font-semibold text-gray-900">
+              {section.title}
+            </h2>
+            {section.body && (
+              <p className="text-sm text-gray-700">{section.body}</p>
+            )}
 
             {section.id === 'audio-synchronization' && <AudioTimelineDiagram />}
 
             {section.tools && section.tools.length > 0 && (
               <div className="border rounded-lg bg-white p-4">
-                <div className="text-sm font-medium text-gray-900 mb-2">Tools</div>
+                <div className="text-sm font-medium text-gray-900 mb-2">
+                  Tools
+                </div>
                 <ul className="space-y-2">
                   {section.tools.map((t) => {
                     const href = getToolHref(t.name);
@@ -189,48 +186,32 @@ export default function GuidePage() {
                   .split('→')
                   .map((item) => item.trim())
                   .filter(Boolean)
-                  .map((item, idx) => <li key={idx}>{item}</li>)}
+                  .map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
               </ol>
             )}
 
-            {section.id === 'faq' && section.faqs && (
-              <div className="space-y-3">
-                {section.faqs.map((f) => {
-                  if (f.question === "Why can't I upload my file?") {
-                    return (
-                      <FaqItem
-                        key={f.question}
-                        question={f.question}
-                        answer={whyCantUploadAnswer}
-                      />
-                    );
-                  }
-
-                  return (
-                    <FaqItem
-                      key={f.question}
-                      question={f.question}
-                      answer={f.answer}
-                    />
-                  );
-                })}
-              </div>
-            )}
-
-            {section.id === 'video-tutorials' && section.videos && section.videos.length > 0 && (
-              <div className="space-y-4">
-                {section.videos.map((v) => (
-                  <div key={v.youtubeId} className="space-y-2">
-                    <div className="text-sm font-medium text-gray-900">{v.title}</div>
-                    <YoutubeEmbed videoId={v.youtubeId} />
-                  </div>
-                ))}
-              </div>
-            )}
+            {section.id === 'video-tutorials' &&
+              section.videos &&
+              section.videos.length > 0 && (
+                <div className="space-y-4">
+                  {section.videos.map((v) => (
+                    <div key={v.youtubeId} className="space-y-2">
+                      <div className="text-sm font-medium text-gray-900">
+                        {v.title}
+                      </div>
+                      <YoutubeEmbed videoId={v.youtubeId} />
+                    </div>
+                  ))}
+                </div>
+              )}
 
             {section.id === 'best-practices' && !section.body && (
               <ul className="text-sm text-gray-700 space-y-1">
-                <li>• Keep image quality high while still compressing for mobile.</li>
+                <li>
+                  • Keep image quality high while still compressing for mobile.
+                </li>
                 <li>• Record clear audio and remove unnecessary silence.</li>
                 <li>• Organize pages and chapters consistently.</li>
                 <li>• Test synchronization by previewing before publishing.</li>
@@ -242,4 +223,3 @@ export default function GuidePage() {
     </div>
   );
 }
-

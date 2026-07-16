@@ -23,14 +23,20 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  ArrowLeft, 
-  Save, 
-  Eye, 
-  Upload, 
-  Plus, 
+import {
+  ArrowLeft,
+  Save,
+  Eye,
+  Upload,
+  Plus,
   GripVertical,
   Edit,
   Trash2,
@@ -38,7 +44,7 @@ import {
   CheckCircle2,
   FileText,
   Image as ImageIcon,
-  Music
+  Music,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getBookStatusBadge } from '@/lib/utils';
@@ -47,8 +53,27 @@ interface BookEditorProps {
   book: any;
 }
 
-function SortableChapterItem({ id, chapter, index, bookId, bookType }: { id: string, chapter: any, index: number, bookId: string, bookType: string }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+function SortableChapterItem({
+  id,
+  chapter,
+  index,
+  bookId,
+  bookType,
+}: {
+  id: string;
+  chapter: any;
+  index: number;
+  bookId: string;
+  bookType: string;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -70,8 +95,13 @@ function SortableChapterItem({ id, chapter, index, bookId, bookType }: { id: str
         <div className="font-medium">{chapter.title}</div>
         <div className="text-sm text-gray-500">
           Chapter {index + 1}
-          {bookType === 'IMAGE' && chapter.pages && ` • ${chapter.pages.length} pages`}
-          {bookType === 'TEXT' && chapter.texts && chapter.texts.length > 0 && ' • Has content'}
+          {bookType === 'IMAGE' &&
+            chapter.pages &&
+            ` • ${chapter.pages.length} pages`}
+          {bookType === 'TEXT' &&
+            chapter.texts &&
+            chapter.texts.length > 0 &&
+            ' • Has content'}
           {chapter.audios && chapter.audios.length > 0 && ' • Has audio'}
         </div>
       </div>
@@ -116,7 +146,7 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -179,7 +209,9 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
     }
   };
 
-  const handleCoverImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -195,7 +227,10 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
 
       if (response.ok) {
         const result = await response.json();
-        setBook((prevBook: any) => ({ ...prevBook, coverImage: result.coverImage }));
+        setBook((prevBook: any) => ({
+          ...prevBook,
+          coverImage: result.coverImage,
+        }));
         router.refresh(); // To update server components if needed
         toast.success('Cover image uploaded and set successfully!');
       } else {
@@ -254,7 +289,7 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-col md:flex-row">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/books">
             <Button variant="ghost" size="icon">
@@ -263,13 +298,16 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">{book.title}</h1>
+              <h1 className="text-3xl font-bold tracking-tight">
+                {book.title}
+              </h1>
               <Badge className={statusBadge.className}>
                 {statusBadge.label}
               </Badge>
             </div>
             <p className="text-gray-500 mt-1">
-              {book.type} Book • {book.chapters ? book.chapters.length : 0} chapters
+              {book.type} Book • {book.chapters ? book.chapters.length : 0}{' '}
+              chapters
             </p>
           </div>
         </div>
@@ -325,7 +363,9 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
               />
             </div>
             <div className="space-y-2">
@@ -339,21 +379,27 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
               id="description"
               className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
             />
           </div>
           <div className="space-y-2">
             <Label>Cover Image</Label>
             <div className="flex items-center gap-4">
               {book.coverImage ? (
-                <img src={book.coverImage} alt="Cover" className="h-32 w-24 object-cover rounded" />
+                <img
+                  src={book.coverImage}
+                  alt="Cover"
+                  className="h-32 w-24 object-cover rounded"
+                />
               ) : (
                 <div className="h-32 w-24 bg-gray-100 rounded flex items-center justify-center">
                   <ImageIcon className="h-8 w-8 text-gray-400" />
                 </div>
               )}
               <div>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => coverImageInputRef.current?.click()}
                   disabled={coverImageLoading}
@@ -370,14 +416,16 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
                     </>
                   )}
                 </Button>
-                <input 
+                <input
                   type="file"
                   ref={coverImageInputRef}
                   onChange={handleCoverImageUpload}
                   accept="image/jpeg,image/png,image/webp"
                   className="hidden"
                 />
-                <p className="text-xs text-gray-500 mt-2">Recommended: 3:4 ratio, &lt;1MB</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Recommended: 3:4 ratio, &lt;1MB
+                </p>
               </div>
             </div>
           </div>
@@ -406,7 +454,9 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
           {!book.chapters || book.chapters.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">No chapters yet</h3>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">
+                No chapters yet
+              </h3>
               <p className="mt-2 text-sm text-gray-500">
                 Get started by adding your first chapter.
               </p>
@@ -418,15 +468,22 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
               </Link>
             </div>
           ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={chapters.map((c: any) => c.id)} strategy={verticalListSortingStrategy}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={chapters.map((c: any) => c.id)}
+                strategy={verticalListSortingStrategy}
+              >
                 <div className="space-y-2">
                   {chapters.map((chapter: any, index: number) => (
-                    <SortableChapterItem 
-                      key={chapter.id} 
-                      id={chapter.id} 
-                      chapter={chapter} 
-                      index={index} 
+                    <SortableChapterItem
+                      key={chapter.id}
+                      id={chapter.id}
+                      chapter={chapter}
+                      index={index}
                       bookId={book.id}
                       bookType={book.type}
                     />
@@ -442,20 +499,28 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
       {book.status === 'DRAFT' && (
         <Card className="border-blue-200 bg-blue-50">
           <CardHeader>
-            <CardTitle className="text-blue-900">Pre-Publish Checklist</CardTitle>
+            <CardTitle className="text-blue-900">
+              Pre-Publish Checklist
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2 text-sm text-blue-800">
               <li className="flex items-center gap-2">
-                <CheckCircle2 className={`h-4 w-4 ${book.title ? 'text-green-600' : 'text-gray-400'}`} />
+                <CheckCircle2
+                  className={`h-4 w-4 ${book.title ? 'text-green-600' : 'text-gray-400'}`}
+                />
                 Book has a title
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle2 className={`h-4 w-4 ${book.chapters && book.chapters.length > 0 ? 'text-green-600' : 'text-gray-400'}`} />
+                <CheckCircle2
+                  className={`h-4 w-4 ${book.chapters && book.chapters.length > 0 ? 'text-green-600' : 'text-gray-400'}`}
+                />
                 Book has at least one chapter
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle2 className={`h-4 w-4 ${book.coverImage ? 'text-green-600' : 'text-gray-400'}`} />
+                <CheckCircle2
+                  className={`h-4 w-4 ${book.coverImage ? 'text-green-600' : 'text-gray-400'}`}
+                />
                 Book has a cover image (recommended)
               </li>
             </ul>

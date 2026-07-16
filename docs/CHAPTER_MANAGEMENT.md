@@ -29,6 +29,7 @@ Author
 ## Database Schema
 
 ### Chapter Model
+
 ```prisma
 model Chapter {
   id              String        @id @default(cuid())
@@ -40,7 +41,7 @@ model Chapter {
   deletedAt       DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  
+
   // Relations
   book            Book          @relation(...)
   pages           ChapterPage[] // For IMAGE books
@@ -50,6 +51,7 @@ model Chapter {
 ```
 
 ### ChapterPage Model (IMAGE Books)
+
 ```prisma
 model ChapterPage {
   id              String    @id @default(cuid())
@@ -57,6 +59,8 @@ model ChapterPage {
   authorId        String
   imagePath       String
   orderIndex      Int       // For ordering pages
+  audioStartTime  Float?    // Optional audio sync marker (seconds)
+  audioEndTime    Float?    // Optional audio sync marker (seconds)
   version         Int       @default(1)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -64,13 +68,16 @@ model ChapterPage {
 ```
 
 ### ChapterText Model (TEXT Books)
+
 ```prisma
 model ChapterText {
   id              String    @id @default(cuid())
   chapterId       String
   authorId        String
   content         String    @db.LongText
-  orderIndex      Int       // ✅ NEW: For ordering pages
+  orderIndex      Int       @default(1)  // For ordering pages
+  audioStartTime  Float?    // Optional audio sync marker (seconds)
+  audioEndTime    Float?    // Optional audio sync marker (seconds)
   version         Int       @default(1)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -78,6 +85,7 @@ model ChapterText {
 ```
 
 ### ChapterAudio Model
+
 ```prisma
 model ChapterAudio {
   id              String    @id @default(cuid())
@@ -98,9 +106,11 @@ model ChapterAudio {
 ### Page Management
 
 #### `GET /api/chapters/[chapterId]/pages`
+
 Returns all pages for a chapter (either ChapterPage or ChapterText based on book type).
 
 **Response:**
+
 ```json
 {
   "pages": [...],
@@ -109,9 +119,11 @@ Returns all pages for a chapter (either ChapterPage or ChapterText based on book
 ```
 
 #### `POST /api/chapters/[chapterId]/pages`
+
 Add a new page to the chapter.
 
 **For TEXT books:**
+
 ```json
 {
   "content": "Page content here..."
@@ -119,15 +131,18 @@ Add a new page to the chapter.
 ```
 
 **For IMAGE books:**
+
 ```
 Content-Type: multipart/form-data
 image: File (JPEG, PNG, WebP)
 ```
 
 #### `PATCH /api/chapters/[chapterId]/pages/[pageId]`
+
 Update an existing page.
 
 **For TEXT books:**
+
 ```json
 {
   "content": "Updated content..."
@@ -135,18 +150,22 @@ Update an existing page.
 ```
 
 **For IMAGE books:**
+
 ```
 Content-Type: multipart/form-data
 image: File (replacement image)
 ```
 
 #### `DELETE /api/chapters/[chapterId]/pages/[pageId]`
+
 Delete a specific page (also deletes associated image file if IMAGE book).
 
 #### `POST /api/chapters/[chapterId]/pages/reorder`
+
 Reorder pages within a chapter.
 
 **Request:**
+
 ```json
 {
   "pageIds": ["id1", "id2", "id3", ...]
@@ -155,14 +174,22 @@ Reorder pages within a chapter.
 
 The order of IDs in the array determines the new orderIndex values.
 
+#### `PUT /api/chapters/[chapterId]`
+
+Save the entire chapter, including title, pages, and optional audio path. The backend
+currently upserts pages/audioStartTime/audioEndTime without validating timing
+overlap or completeness.
+
 ---
 
 ### Audio Management
 
 #### `POST /api/chapters/[chapterId]/audio`
+
 Upload or replace audio narration.
 
 **Request:**
+
 ```
 Content-Type: multipart/form-data
 audio: File (MP3, M4A, WAV)
@@ -171,6 +198,7 @@ audio: File (MP3, M4A, WAV)
 **Note:** Only one audio file per chapter. Uploading a new file replaces the existing one.
 
 #### `DELETE /api/chapters/[chapterId]/audio`
+
 Delete audio narration (also removes the audio file from storage).
 
 ---
@@ -178,17 +206,21 @@ Delete audio narration (also removes the audio file from storage).
 ## File Upload Specifications
 
 ### Images
+
 - **Allowed types:** JPEG, PNG, WebP
 - **Max size:** 10 MB
 - **Storage path:** `/public/uploads/images/{bookId}/{chapterId}/`
 
 ### Audio
+
 - **Allowed types:** MP3, M4A, WAV
 - **Max size:** 50 MB
 - **Storage path:** `/public/uploads/audio/{bookId}/{chapterId}/`
 
 ### File Naming
+
 Files are automatically renamed to prevent conflicts:
+
 ```
 {sanitized_name}_{timestamp}_{random}.{ext}
 ```
@@ -198,24 +230,29 @@ Files are automatically renamed to prevent conflicts:
 ## UI Components
 
 ### `<ChapterEditor>`
+
 Main chapter editing interface.
 
 **Features:**
+
 - Chapter title editing
 - Validation error display
 - Integration with PageManager and AudioUploader
 - Save and Delete actions
 
 **Validation:**
+
 - Chapter title must not be empty
 - At least one page required
 - All TEXT pages must have content
 - Cannot save if validation fails
 
 ### `<PageManager>`
+
 Manages multiple pages for a chapter.
 
 **Props:**
+
 ```tsx
 interface PageManagerProps {
   bookType: 'TEXT' | 'IMAGE';
@@ -226,22 +263,28 @@ interface PageManagerProps {
 ```
 
 **Features for TEXT books:**
+
 - Add new text pages
 - Edit page content inline
 - Delete pages
 - Reorder pages (move up/down)
+- Set optional audio start/end times per page
 
 **Features for IMAGE books:**
+
 - Upload new images
 - Replace existing images
 - Delete pages
 - Reorder pages (move up/down)
 - Image preview
+- Set optional audio start/end times per page
 
 ### `<AudioUploader>`
+
 Manages audio narration for a chapter.
 
 **Props:**
+
 ```tsx
 interface AudioUploaderProps {
   chapterId: string;
@@ -251,11 +294,13 @@ interface AudioUploaderProps {
 ```
 
 **Features:**
-- Upload audio file
+
+- Upload audio file with progress and ETA
 - Replace existing audio
 - Delete audio
 - Play/pause audio preview
 - HTML5 audio controls
+- Validates file type and size against `uploadLimits`
 
 ---
 
@@ -298,57 +343,74 @@ interface AudioUploaderProps {
 ## Validation Rules
 
 ### Chapter Title
+
 - ✅ Required
 - ✅ Must not be empty after trimming whitespace
 
 ### Pages
+
 - ✅ At least one page required
 - ✅ TEXT pages must have non-empty content
 - ✅ IMAGE pages must have a valid image file
 
+### Audio Timing
+
+- ✅ The client-side utility `lib/audio-timing.ts` validates:
+  - Every page must have both `audioStartTime` and `audioEndTime` when audio is attached.
+  - `audioStartTime` must be >= 0.
+  - `audioEndTime` must be strictly greater than `audioStartTime`.
+  - Time ranges must not overlap across pages (adjacent ranges are allowed).
+  - Timing values must be removed when no audio is attached.
+- ⚠️ The API currently accepts these values without its own server-side re-validation
+  (use the shared utility to validate before saving if you add API-level checks).
+
 ### Files
-- ✅ Images: JPEG, PNG, WebP only (max 10MB)
-- ✅ Audio: MP3, M4A, WAV only (max 50MB)
+
+- ✅ Images: configured `supportedImageTypes` (max `imageMaxSizeMb` MB)
+- ✅ Audio: configured `supportedAudioTypes` (max `audioMaxSizeMb` MB)
 
 ---
 
 ## Data Migration
 
-If you have existing ChapterText records created before the `orderIndex` field was added, run the migration script:
+The `orderIndex` field is now part of the schema with a default value. If you have
+existing `ChapterText` records created before the field was added, regenerate the
+Prisma client and run migrations as normal:
 
 ```bash
-npm run migrate:chapter-text-order
+npx prisma migrate dev
+npx prisma generate
 ```
 
-Or manually:
-```bash
-npx ts-node scripts/migrate-chapter-text-order.ts
-```
-
-This will assign `orderIndex` values to all existing text records (0 for the first/only text, incrementing for multiple texts per chapter).
+If you need a one-off backfill script, create `scripts/migrate-chapter-text-order.ts`
+and run it with `npx ts-node`.
 
 ---
 
 ## Technical Details
 
 ### File Storage
+
 - Files are stored in the `public/uploads/` directory
 - Organized by type, book ID, and chapter ID
 - Files are automatically cleaned up when pages/audio are deleted
 - Files are served statically via Next.js public directory
 
 ### Version Control
+
 - Book version increments when chapters are modified
 - Chapter version increments on updates
 - Page/Audio versions increment on updates
 - Published books change status to `UNPUBLISHED_CHANGES`
 
 ### Authorization
+
 - Only chapter authors can modify their chapters
 - Super admins can modify any chapter
 - Authorization checked on all API endpoints
 
 ### Soft Deletes
+
 - Chapters use soft delete (deletedAt timestamp)
 - Pages and audio use hard delete with file cleanup
 - Cascade deletes configured in Prisma schema
@@ -358,19 +420,23 @@ This will assign `orderIndex` values to all existing text records (0 for the fir
 ## Troubleshooting
 
 ### "Page not found" errors
+
 - Ensure Prisma client is regenerated after schema changes
 - Check that migrations have been applied
 
 ### File upload fails
+
 - Verify upload directory exists and is writable
 - Check file size limits
 - Verify file type is allowed
 
 ### TypeScript errors about orderIndex
+
 - Run `npx prisma generate` to regenerate Prisma client
 - Restart TypeScript server in your IDE
 
 ### Images not displaying
+
 - Ensure files are in `public/uploads/` directory
 - Check that file paths are stored correctly (starting with `/uploads/`)
 - Verify Next.js is serving static files
@@ -397,6 +463,7 @@ Potential improvements for future versions:
 ## Support
 
 For issues or questions about the Chapter Management system, please refer to:
+
 - This documentation
 - API endpoint documentation
 - Component source code with inline comments
