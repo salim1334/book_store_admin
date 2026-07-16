@@ -98,7 +98,6 @@ export function PageManager({
     );
     setPages(updatedPages);
     notifyParent(updatedPages);
-    toast.success('Time updated successfully.');
   };
 
   // Sync local state when parent updates the pages prop

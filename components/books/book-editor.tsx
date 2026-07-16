@@ -331,13 +331,7 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
               </>
             )}
           </Button>
-          <Link href={`/dashboard/books/${book.id}/preview`}>
-            <Button variant="outline">
-              <Eye className="mr-2 h-4 w-4" />
-              Preview
-            </Button>
-          </Link>
-          {book.status !== 'PUBLISHED' && (
+          {book.status !== 'DRAFT' && book.status == 'UNPUBLISHED_CHANGES' && (
             <Button onClick={handlePublish} disabled={saving}>
               Publish Book
             </Button>
