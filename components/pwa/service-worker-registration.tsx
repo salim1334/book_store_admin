@@ -45,7 +45,7 @@ export function ServiceWorkerRegistration() {
   return (
     <>
       {installPrompt && (
-        <div className="bg-primary text-primary-foreground px-4 py-2 text-sm shadow-md flex items-center justify-between gap-4">
+        <div className="bg-primary text-primary-foreground px-4 py-2 text-sm shadow-md flex items-center justify-between gap-4 z-40">
           <span className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Add Book Store Admin to your home screen for an app-like experience.

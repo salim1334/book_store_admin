@@ -23,6 +23,11 @@ enum BookStatus {
   UNPUBLISHED_CHANGES
 }
 
+enum SwipeDirection {
+  RTL
+  LTR
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -47,6 +52,7 @@ model Book {
   coverImage      String?
   type            BookType
   status          BookStatus  @default(DRAFT)
+  swipeDirection  SwipeDirection @default(RTL)
   isHidden        Boolean     @default(false)
   isBundled       Boolean     @default(false)
   version         Int         @default(1)
@@ -91,6 +97,7 @@ model ChapterPage {
   authorId        String
   imagePath       String
   orderIndex      Int
+  swipeDirection  SwipeDirection @default(RTL)
   audioStartTime  Float?
   audioEndTime    Float?
   version         Int       @default(1)
@@ -111,6 +118,7 @@ model ChapterText {
   authorId        String
   content         String    @db.LongText
   orderIndex      Int       @default(1)
+  swipeDirection  SwipeDirection @default(RTL)
   audioStartTime  Float?
   audioEndTime    Float?
   version         Int       @default(1)

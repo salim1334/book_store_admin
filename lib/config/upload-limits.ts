@@ -18,11 +18,11 @@ export const uploadLimits: UploadLimits = {
   // NEXT_PUBLIC_* values are used by the browser; non-public values are used by the server.
   imageMaxSizeMb: parsePositiveNumber(
     process.env.NEXT_PUBLIC_IMAGE_MAX_SIZE_MB ?? process.env.IMAGE_MAX_SIZE_MB,
-    10,
+    2,
   ),
   audioMaxSizeMb: parsePositiveNumber(
     process.env.NEXT_PUBLIC_AUDIO_MAX_SIZE_MB ?? process.env.AUDIO_MAX_SIZE_MB,
-    50,
+    25,
   ),
   supportedImageTypes: (
     process.env.NEXT_PUBLIC_SUPPORTED_IMAGE_TYPES ??
@@ -36,7 +36,7 @@ export const uploadLimits: UploadLimits = {
   supportedAudioTypes: (
     process.env.NEXT_PUBLIC_SUPPORTED_AUDIO_TYPES ??
     process.env.SUPPORTED_AUDIO_TYPES ??
-    'audio/mpeg,audio/mp4,audio/wav,audio/x-m4a,audio/aac'
+    'audio/mpeg,audio/mp4,audio/x-m4a,audio/aac'
   )
     .split(',')
     .map((s) => s.trim())

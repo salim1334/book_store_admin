@@ -1,6 +1,7 @@
 export type UserRole = 'SUPER_ADMIN' | 'AUTHOR';
 export type BookType = 'IMAGE' | 'TEXT';
 export type BookStatus = 'DRAFT' | 'PUBLISHED' | 'UNPUBLISHED_CHANGES';
+export type SwipeDirection = 'RTL' | 'LTR';
 
 export interface User {
   id: string;
@@ -20,6 +21,7 @@ export interface Book {
   coverImage?: string;
   type: BookType;
   status: BookStatus;
+  swipeDirection: SwipeDirection;
   isHidden: boolean;
   isBundled: boolean;
   version: number;
@@ -53,6 +55,7 @@ export interface ChapterPage {
   authorId: string;
   imagePath: string;
   orderIndex: number;
+  swipeDirection: SwipeDirection;
   version: number;
   createdAt: Date;
   updatedAt: Date;
@@ -63,6 +66,7 @@ export interface ChapterText {
   chapterId: string;
   authorId: string;
   content: string;
+  swipeDirection: SwipeDirection;
   version: number;
   createdAt: Date;
   updatedAt: Date;

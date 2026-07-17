@@ -5,7 +5,7 @@ import { uploadImage } from '@/lib/file-upload';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ chapterId: string }> }
+  { params }: { params: Promise<{ chapterId: string }> },
 ) {
   const { chapterId } = await params;
 
@@ -49,14 +49,14 @@ export async function GET(
     console.error('Error fetching pages:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ chapterId: string }> }
+  { params }: { params: Promise<{ chapterId: string }> },
 ) {
   const { chapterId } = await params;
   try {
@@ -103,7 +103,7 @@ export async function POST(
       if (!file) {
         return NextResponse.json(
           { error: 'Image file is required' },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -113,7 +113,7 @@ export async function POST(
       if (!uploadResult.success) {
         return NextResponse.json(
           { error: uploadResult.error },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -128,6 +128,7 @@ export async function POST(
           authorId: session.user.id,
           imagePath: uploadResult.filePath!,
           orderIndex: nextOrderIndex,
+          swipeDirection: chapter.book.swipeDirection,
         },
       });
 
@@ -151,7 +152,7 @@ export async function POST(
       if (!content || !content.trim()) {
         return NextResponse.json(
           { error: 'Content is required' },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -166,6 +167,7 @@ export async function POST(
           authorId: session.user.id,
           content: content.trim(),
           orderIndex: nextOrderIndex,
+          swipeDirection: chapter.book.swipeDirection,
         },
       });
 
@@ -186,7 +188,7 @@ export async function POST(
     console.error('Error creating page:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

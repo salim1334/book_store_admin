@@ -41,10 +41,11 @@ async function getBook(bookId: string, userId: string, userRole: string) {
 }
 
 export default async function BookEditPage({
-  params: { bookId },
+  params,
 }: {
-  params: { bookId: string };
+  params: Promise<{ bookId: string }>;
 }) {
+  const { bookId } = await params;
   const session = await auth();
 
   if (!session?.user) {

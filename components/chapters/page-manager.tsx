@@ -447,6 +447,10 @@ export function PageManager({
               <p className="text-xs text-gray-400 mt-1">
                 Supported formats: {supportedImageLabels} (max {maxImageLabel})
               </p>
+              <p className="text-xs text-gray-400 mt-2">
+                Tip: Resize to 1080×1920, export as WebP (quality 80) or JPEG
+                (quality 85). Aim for under 500KB per page.
+              </p>
               <label htmlFor="first-image-upload" className="inline-block mt-4">
                 <Button
                   onClick={() =>

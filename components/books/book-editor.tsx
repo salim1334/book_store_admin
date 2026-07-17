@@ -134,9 +134,20 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
   const [formData, setFormData] = useState({
     title: book.title,
     description: book.description || '',
+    swipeDirection: book.swipeDirection || 'RTL',
   });
 
   const statusBadge = getBookStatusBadge(book.status);
+
+  useEffect(() => {
+    setBook(initialBook);
+    setFormData((prev) => ({
+      ...prev,
+      title: initialBook.title,
+      description: initialBook.description || '',
+      swipeDirection: initialBook.swipeDirection || 'RTL',
+    }));
+  }, [initialBook]);
 
   useEffect(() => {
     setChapters(initialBook.chapters || []);
@@ -331,7 +342,7 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
               </>
             )}
           </Button>
-          {book.status !== 'DRAFT' && book.status == 'UNPUBLISHED_CHANGES' && (
+          {book.status !== 'UNPUBLISHED_CHANGES' && (
             <Button onClick={handlePublish} disabled={saving}>
               Publish Book
             </Button>
@@ -365,6 +376,37 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
             <div className="space-y-2">
               <Label>Type</Label>
               <Input value={book.type} disabled />
+            </div>
+            <div className="space-y-2">
+              <Label>Swipe Direction</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, swipeDirection: 'RTL' })
+                  }
+                  className={`flex-1 px-3 py-2 text-sm border rounded-md transition-all ${
+                    formData.swipeDirection === 'RTL'
+                      ? 'border-green-600 bg-green-50 text-green-700 font-medium'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                  }`}
+                >
+                  Right → Left
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, swipeDirection: 'LTR' })
+                  }
+                  className={`flex-1 px-3 py-2 text-sm border rounded-md transition-all ${
+                    formData.swipeDirection === 'LTR'
+                      ? 'border-green-600 bg-green-50 text-green-700 font-medium'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                  }`}
+                >
+                  Left → Right
+                </button>
+              </div>
             </div>
           </div>
           <div className="space-y-2">

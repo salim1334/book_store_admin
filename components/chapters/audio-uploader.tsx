@@ -33,7 +33,6 @@ interface AudioUploaderProps {
 const audioTypeLabels: Record<string, string> = {
   'audio/mpeg': 'MP3',
   'audio/mp4': 'MP4/M4A',
-  'audio/wav': 'WAV',
   'audio/x-m4a': 'M4A',
   'audio/aac': 'AAC',
 };
@@ -279,6 +278,10 @@ export function AudioUploader({
             <p className="mt-2 text-sm text-gray-500">No audio narration yet</p>
             <p className="text-xs text-gray-400 mt-1">
               Supported formats: {supportedAudioLabels} (max {maxAudioLabel})
+            </p>
+            <p className="text-xs text-gray-400 mt-2">
+              Tip: Export as MP3 or M4A at 64–96 kbps for voice. A 30-min
+              chapter should be under 15MB.
             </p>
           </div>
         ) : (

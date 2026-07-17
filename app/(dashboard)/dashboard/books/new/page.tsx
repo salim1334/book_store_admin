@@ -23,6 +23,7 @@ export default function NewBookPage() {
     title: '',
     description: '',
     type: 'TEXT' as 'TEXT' | 'IMAGE',
+    swipeDirection: 'RTL' as 'RTL' | 'LTR',
     isBundled: false,
   });
 
@@ -139,6 +140,46 @@ export default function NewBookPage() {
                   <div className="font-semibold mb-1">Image Book</div>
                   <div className="text-sm text-gray-500">
                     Chapters contain page images
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Swipe Direction *</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, swipeDirection: 'RTL' })
+                  }
+                  disabled={loading}
+                  className={`p-4 border-2 rounded-lg text-left transition-all ${
+                    formData.swipeDirection === 'RTL'
+                      ? 'border-green-600 bg-green-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-semibold mb-1">Right to Left (RTL)</div>
+                  <div className="text-sm text-gray-500">
+                    For Arabic, Hebrew, and other RTL languages
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, swipeDirection: 'LTR' })
+                  }
+                  disabled={loading}
+                  className={`p-4 border-2 rounded-lg text-left transition-all ${
+                    formData.swipeDirection === 'LTR'
+                      ? 'border-green-600 bg-green-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-semibold mb-1">Left to Right (LTR)</div>
+                  <div className="text-sm text-gray-500">
+                    For English, Amharic, and other LTR languages
                   </div>
                 </button>
               </div>

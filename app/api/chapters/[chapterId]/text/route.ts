@@ -4,12 +4,12 @@ import { prisma } from '@/lib/db';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ chapterId: string }> }
+  { params }: { params: Promise<{ chapterId: string }> },
 ) {
   const { chapterId } = await params;
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -18,7 +18,10 @@ export async function POST(
     const { content } = body;
 
     if (!content) {
-      return NextResponse.json({ error: 'Content is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Content is required' },
+        { status: 400 },
+      );
     }
 
     // Verify chapter ownership
@@ -31,7 +34,10 @@ export async function POST(
       return NextResponse.json({ error: 'Chapter not found' }, { status: 404 });
     }
 
-    if (session.user.role !== 'SUPER_ADMIN' && chapter.authorId !== session.user.id) {
+    if (
+      session.user.role !== 'SUPER_ADMIN' &&
+      chapter.authorId !== session.user.id
+    ) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -59,6 +65,7 @@ export async function POST(
           chapterId: chapterId,
           authorId: session.user.id,
           content,
+          swipeDirection: chapter.book.swipeDirection,
         },
       });
     }
@@ -77,6 +84,9 @@ export async function POST(
     return NextResponse.json(chapterText);
   } catch (error) {
     console.error('Error updating chapter text:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

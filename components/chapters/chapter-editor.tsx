@@ -392,7 +392,7 @@ export function ChapterEditor({ chapterId }: ChapterEditorProps) {
               •{' '}
               {chapter.book.type === 'TEXT'
                 ? 'Add multiple text pages to organize your content effectively'
-                : 'Upload high-quality images in the correct order (JPEG, PNG, or WebP)'}
+                : 'Upload images in the correct order (WebP or JPEG preferred)'}
             </li>
             <li>• Use the move up/down buttons to reorder pages</li>
             <li>
@@ -405,6 +405,35 @@ export function ChapterEditor({ chapterId }: ChapterEditorProps) {
               • Click **Save Chapter** to persist all changes to the server.
             </li>
           </ul>
+          <div className="mt-3 pt-3 border-t border-blue-200">
+            <h4 className="font-medium text-blue-900 text-sm mb-1">
+              Compression tips for mobile
+            </h4>
+            <ul className="text-xs text-blue-700 space-y-1">
+              <li>
+                • Images: Resize to 1080×1920 max, export as WebP (quality 80)
+                or JPEG (quality 85). Aim for under 500KB per page.
+              </li>
+              <li>
+                • Audio: Use MP3 or M4A at 64–96 kbps for voice narration. A
+                30-minute chapter should be under 15MB.
+              </li>
+              <li>
+                • Avoid WAV — it's 10× larger with no quality benefit for spoken
+                word.
+              </li>
+              <li>
+                • See the{' '}
+                <Link
+                  href="/dashboard/guide#preparing-images"
+                  className="underline font-medium"
+                >
+                  Content Guide
+                </Link>{' '}
+                for recommended tools.
+              </li>
+            </ul>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -4,12 +4,12 @@ import { prisma } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ bookId: string }> }
+  { params }: { params: Promise<{ bookId: string }> },
 ) {
   const { bookId } = await params;
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -45,25 +45,31 @@ export async function GET(
     }
 
     // Check authorization
-    if (session.user.role !== 'SUPER_ADMIN' && book.authorId !== session.user.id) {
+    if (
+      session.user.role !== 'SUPER_ADMIN' &&
+      book.authorId !== session.user.id
+    ) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     return NextResponse.json(book);
   } catch (error) {
     console.error('Error fetching book:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ bookId: string }> }
+  { params }: { params: Promise<{ bookId: string }> },
 ) {
   const { bookId } = await params;
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -77,17 +83,23 @@ export async function PATCH(
     }
 
     // Check authorization
-    if (session.user.role !== 'SUPER_ADMIN' && book.authorId !== session.user.id) {
+    if (
+      session.user.role !== 'SUPER_ADMIN' &&
+      book.authorId !== session.user.id
+    ) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
-    const { title, description, coverImage, isHidden, status } = body;
+    const { title, description, coverImage, isHidden, status, swipeDirection } =
+      body;
 
     // If book is published and being edited, create unpublished changes status
-    const newStatus = book.status === 'PUBLISHED' && (title || description || coverImage)
-      ? 'UNPUBLISHED_CHANGES'
-      : status || book.status;
+    const newStatus =
+      book.status === 'PUBLISHED' &&
+      (title || description || coverImage || swipeDirection)
+        ? 'UNPUBLISHED_CHANGES'
+        : status || book.status;
 
     const updatedBook = await prisma.book.update({
       where: { id: bookId },
@@ -96,8 +108,10 @@ export async function PATCH(
         ...(description !== undefined && { description }),
         ...(coverImage !== undefined && { coverImage }),
         ...(isHidden !== undefined && { isHidden }),
-        ...(status && { status }),
+        ...(swipeDirection &&
+          ['RTL', 'LTR'].includes(swipeDirection) && { swipeDirection }),
         status: newStatus,
+        ...(newStatus === 'PUBLISHED' && { publishedAt: new Date() }),
         version: book.version + 1,
       },
       include: {
@@ -127,18 +141,21 @@ export async function PATCH(
     return NextResponse.json(updatedBook);
   } catch (error) {
     console.error('Error updating book:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ bookId: string }> }
+  { params }: { params: Promise<{ bookId: string }> },
 ) {
   const { bookId } = await params;
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -152,7 +169,10 @@ export async function DELETE(
     }
 
     // Check authorization
-    if (session.user.role !== 'SUPER_ADMIN' && book.authorId !== session.user.id) {
+    if (
+      session.user.role !== 'SUPER_ADMIN' &&
+      book.authorId !== session.user.id
+    ) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -167,6 +187,9 @@ export async function DELETE(
     return NextResponse.json({ message: 'Book deleted successfully' });
   } catch (error) {
     console.error('Error deleting book:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
