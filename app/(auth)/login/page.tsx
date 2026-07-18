@@ -27,10 +27,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     const rememberedEmail = localStorage.getItem('rememberedEmail');
-    const rememberedPassword = localStorage.getItem('rememberedPassword');
-    if (rememberedEmail && rememberedPassword) {
+    // const rememberedPassword = localStorage.getItem('rememberedPassword');
+    if (rememberedEmail) {
       setEmail(rememberedEmail);
-      setPassword(rememberedPassword);
+      // setPassword(rememberedPassword);
       setRememberMe(true);
     }
   }, []);
@@ -52,10 +52,10 @@ export default function LoginPage() {
       } else {
         if (rememberMe) {
           localStorage.setItem('rememberedEmail', email);
-          localStorage.setItem('rememberedPassword', password);
+          // localStorage.setItem('rememberedPassword', password);
         } else {
           localStorage.removeItem('rememberedEmail');
-          localStorage.removeItem('rememberedPassword');
+          // localStorage.removeItem('rememberedPassword');
         }
         router.push('/dashboard');
         router.refresh();
