@@ -12,8 +12,6 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Starting ChapterText orderIndex migration...');
-
   try {
     // Get all ChapterText records grouped by chapterId
     const allTexts = await prisma.chapterText.findMany({
@@ -22,8 +20,6 @@ async function main() {
         { createdAt: 'asc' },
       ],
     });
-
-    console.log(`Found ${allTexts.length} ChapterText records to process`);
 
     // Group by chapterId
     const textsByChapter = new Map<string, any[]>();
@@ -35,14 +31,10 @@ async function main() {
       textsByChapter.get(text.chapterId)!.push(text);
     }
 
-    console.log(`Processing ${textsByChapter.size} chapters...`);
-
     let updatedCount = 0;
 
     // Update each chapter's texts with proper orderIndex
-    for (const [chapterId, texts] of textsByChapter.entries()) {
-      console.log(`  Chapter ${chapterId}: ${texts.length} text(s)`);
-      
+    for (const [chapterId, texts] of textsByChapter.entries()) {      
       for (let i = 0; i < texts.length; i++) {
         const text = texts[i];
         
@@ -55,9 +47,6 @@ async function main() {
         updatedCount++;
       }
     }
-
-    console.log(`✅ Successfully updated ${updatedCount} ChapterText records`);
-    console.log('Migration complete!');
 
   } catch (error) {
     console.error('❌ Migration failed:', error);

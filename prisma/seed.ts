@@ -4,8 +4,6 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding database...');
-
   // Create SuperAdmin account
   const hashedPassword = await bcrypt.hash('admin123', 12);
   
@@ -20,8 +18,6 @@ async function main() {
       isActive: true,
     },
   });
-
-  console.log('✅ SuperAdmin created:', superAdmin.email);
 
   // Create a demo author account
   const authorPassword = await bcrypt.hash('author123', 12);
@@ -38,8 +34,6 @@ async function main() {
     },
   });
 
-  console.log('✅ Demo Author created:', author.email);
-
   // Create a demo book
   const book = await prisma.book.create({
     data: {
@@ -51,8 +45,6 @@ async function main() {
     },
   });
 
-  console.log('✅ Demo Book created:', book.title);
-
   // Create a demo chapter
   const chapter = await prisma.chapter.create({
     data: {
@@ -63,8 +55,6 @@ async function main() {
     },
   });
 
-  console.log('✅ Demo Chapter created:', chapter.title);
-
   // Add text content to the chapter
   await prisma.chapterText.create({
     data: {
@@ -73,12 +63,6 @@ async function main() {
       content: 'Welcome to your first book! This is where your story begins...',
     },
   });
-
-  console.log('✅ Demo Content created');
-  console.log('\n🎉 Seeding completed successfully!\n');
-  console.log('📝 Login credentials:');
-  console.log('   SuperAdmin: admin@bookstore.com / admin123');
-  console.log('   Author: author@bookstore.com / author123\n');
 }
 
 main()
