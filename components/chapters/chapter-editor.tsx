@@ -368,6 +368,7 @@ export function ChapterEditor({ chapterId }: ChapterEditorProps) {
             pages={pages}
             chapterId={chapter.id}
             hasAudio={!!chapter.audios?.[0]?.audioPath}
+            audioPath={chapter.audios?.[0]?.audioPath || null}
             onUpdate={handleRefresh} // ✅ now passes data
           />
         </CardContent>

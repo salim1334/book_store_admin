@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/db';
+import { validateBookForPublish } from '@/lib/publish-validation';
 
 export async function GET(
   request: NextRequest,
@@ -93,6 +94,35 @@ export async function PATCH(
     const body = await request.json();
     const { title, description, coverImage, isHidden, status, swipeDirection } =
       body;
+
+    // Pre-publish validation: block publishing incomplete books
+    if (status === 'PUBLISHED') {
+      const bookForValidation = await prisma.book.findUnique({
+        where: { id: bookId },
+        include: {
+          chapters: {
+            where: { deletedAt: null },
+            orderBy: { orderIndex: 'asc' },
+            include: {
+              pages: { orderBy: { orderIndex: 'asc' } },
+              texts: { orderBy: { orderIndex: 'asc' } },
+              audios: true,
+            },
+          },
+        },
+      });
+
+      const issues = validateBookForPublish(bookForValidation!);
+      if (issues.length > 0) {
+        return NextResponse.json(
+          {
+            error: 'Book is not ready to publish. Please fix the issues below.',
+            issues,
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     // If book is published and being edited, create unpublished changes status
     const newStatus =

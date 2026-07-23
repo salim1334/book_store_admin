@@ -6,6 +6,10 @@ export type UploadLimits = {
   audioMaxSizeMb: number;
   supportedImageTypes: string[];
   supportedAudioTypes: string[];
+  textPageMaxChars: number;
+  imageOptimizeMaxWidth: number;
+  imageOptimizeMaxHeight: number;
+  imageOptimizeQuality: number;
 };
 
 function parsePositiveNumber(value: string | undefined, fallback: number) {
@@ -41,6 +45,25 @@ export const uploadLimits: UploadLimits = {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
+  // Maximum characters allowed in a single text page (hard server-side cap).
+  textPageMaxChars: parsePositiveNumber(
+    process.env.NEXT_PUBLIC_TEXT_PAGE_MAX_CHARS ??
+      process.env.TEXT_PAGE_MAX_CHARS,
+    5000,
+  ),
+  // Optional server-side image optimization (resize + compress) settings.
+  imageOptimizeMaxWidth: parsePositiveNumber(
+    process.env.IMAGE_OPTIMIZE_MAX_WIDTH,
+    1080,
+  ),
+  imageOptimizeMaxHeight: parsePositiveNumber(
+    process.env.IMAGE_OPTIMIZE_MAX_HEIGHT,
+    1920,
+  ),
+  imageOptimizeQuality: parsePositiveNumber(
+    process.env.IMAGE_OPTIMIZE_QUALITY,
+    80,
+  ),
 };
 
 export const MAX_IMAGE_SIZE_BYTES = Math.round(
@@ -50,6 +73,8 @@ export const MAX_IMAGE_SIZE_BYTES = Math.round(
 export const MAX_AUDIO_SIZE_BYTES = Math.round(
   uploadLimits.audioMaxSizeMb * 1024 * 1024,
 );
+
+export const MAX_TEXT_PAGE_CHARS = uploadLimits.textPageMaxChars;
 
 export function isSupportedImageType(mimeType: string) {
   return uploadLimits.supportedImageTypes.includes(mimeType);

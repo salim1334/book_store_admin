@@ -39,11 +39,11 @@ export function Sidebar({
   const authorNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/books', label: 'My Books', icon: BookOpen },
-    {
-      href: '/dashboard/guide#preparing-images',
-      label: 'Content Guide',
-      icon: Book,
-    },
+    // {
+    //   href: '/dashboard/guide#preparing-images',
+    //   label: 'Content Guide',
+    //   icon: Book,
+    // },
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -51,11 +51,11 @@ export function Sidebar({
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/authors', label: 'Authors', icon: Users },
     { href: '/dashboard/all-books', label: 'All Books', icon: FileText },
-    {
-      href: '/dashboard/guide#preparing-images',
-      label: 'Content Guide',
-      icon: Book,
-    },
+    // {
+    //   href: '/dashboard/guide#preparing-images',
+    //   label: 'Content Guide',
+    //   icon: Book,
+    // },
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
   ];
 

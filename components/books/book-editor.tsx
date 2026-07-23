@@ -45,6 +45,7 @@ import {
   FileText,
   Image as ImageIcon,
   Music,
+  AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getBookStatusBadge } from '@/lib/utils';
@@ -59,12 +60,16 @@ function SortableChapterItem({
   index,
   bookId,
   bookType,
+  onDelete,
+  isDeleting,
 }: {
   id: string;
   chapter: any;
   index: number;
   bookId: string;
   bookType: string;
+  onDelete: () => void;
+  isDeleting: boolean;
 }) {
   const {
     attributes,
@@ -111,12 +116,34 @@ function SortableChapterItem({
         )}
         <Link href={`/dashboard/books/${bookId}/chapters/${chapter.id}`}>
           <Button variant="outline" size="sm">
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
+            <Edit className="h-4 w-4" />
           </Button>
         </Link>
-        <Button variant="outline" size="sm" className="text-red-600">
-          <Trash2 className="h-4 w-4" />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onPointerDownCapture={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          disabled={isDeleting}
+          className="text-red-600 hover:text-red-700"
+        >
+          {isDeleting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Deleting...
+            </>
+          ) : (
+            <>
+              <Trash2 className="h-4 w-4" />
+            </>
+          )}
         </Button>
       </div>
     </div>
@@ -129,8 +156,12 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [coverImageLoading, setCoverImageLoading] = useState(false);
+  const [deletingChapterId, setDeletingChapterId] = useState<string | null>(
+    null,
+  );
   const coverImageInputRef = useRef<HTMLInputElement>(null);
   const [chapters, setChapters] = useState(initialBook.chapters || []);
+  const [publishIssues, setPublishIssues] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     title: book.title,
     description: book.description || '',
@@ -260,6 +291,45 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
     }
   };
 
+  const handleDeleteChapter = (chapter: any) => {
+    toast(`Delete "${chapter.title}"?`, {
+      description:
+        'This will also delete all pages and audio. This action cannot be undone.',
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          setDeletingChapterId(chapter.id);
+          try {
+            const response = await fetch(`/api/chapters/${chapter.id}`, {
+              method: 'DELETE',
+            });
+            if (response.ok) {
+              setChapters((prev) =>
+                prev.filter((c: any) => c.id !== chapter.id),
+              );
+              toast.success('Chapter deleted successfully!');
+            } else {
+              const error = await response.json();
+              toast.error(error.error || 'Failed to delete chapter');
+            }
+          } catch (error) {
+            console.error('Error deleting chapter:', error);
+            toast.error('An error occurred during deletion');
+          } finally {
+            setDeletingChapterId(null);
+          }
+        },
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => {},
+      },
+      classNames: {
+        actionButton: 'bg-red-600 text-white hover:bg-red-700',
+      },
+    });
+  };
+
   const handlePublish = async () => {
     toast('Are you sure you want to publish this book?', {
       description: 'It will become available to all readers.',
@@ -267,6 +337,7 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
         label: 'Publish',
         onClick: async () => {
           setSaving(true);
+          setPublishIssues([]);
           try {
             const response = await fetch(`/api/books/${book.id}`, {
               method: 'PATCH',
@@ -280,7 +351,13 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
               toast.success('Book published successfully!');
               router.refresh();
             } else {
-              toast.error('Failed to publish book.');
+              const error = await response.json().catch(() => null);
+              if (error?.issues?.length) {
+                setPublishIssues(error.issues);
+                toast.error(error.error || 'Book is not ready to publish.');
+              } else {
+                toast.error(error?.error || 'Failed to publish book.');
+              }
             }
           } catch (error) {
             console.error('Error publishing book:', error);
@@ -299,6 +376,25 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
 
   return (
     <div className="space-y-6">
+      {/* Publish validation issues */}
+      {publishIssues.length > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-900 text-base">
+              <AlertCircle className="h-5 w-5" />
+              This book is not ready to publish
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-1 text-sm text-red-800 list-disc list-inside">
+              {publishIssues.map((issue, i) => (
+                <li key={i}>{issue}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between flex-col md:flex-row">
         <div className="flex items-center gap-4">
@@ -522,6 +618,8 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
                       index={index}
                       bookId={book.id}
                       bookType={book.type}
+                      onDelete={() => handleDeleteChapter(chapter)}
+                      isDeleting={deletingChapterId === chapter.id}
                     />
                   ))}
                 </div>

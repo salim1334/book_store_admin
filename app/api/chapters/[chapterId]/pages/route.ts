@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/db';
 import { uploadImage } from '@/lib/file-upload';
+import { MAX_TEXT_PAGE_CHARS } from '@/lib/config/upload-limits';
 
 export async function GET(
   request: NextRequest,
@@ -99,6 +100,7 @@ export async function POST(
       // Handle image upload
       const formData = await request.formData();
       const file = formData.get('image') as File;
+      const optimize = formData.get('optimize') === 'true';
 
       if (!file) {
         return NextResponse.json(
@@ -107,8 +109,10 @@ export async function POST(
         );
       }
 
-      // Upload image
-      const uploadResult = await uploadImage(file, chapter.bookId, chapterId);
+      // Upload image (optionally resized + compressed on the server)
+      const uploadResult = await uploadImage(file, chapter.bookId, chapterId, {
+        optimize,
+      });
 
       if (!uploadResult.success) {
         return NextResponse.json(
@@ -152,6 +156,15 @@ export async function POST(
       if (!content || !content.trim()) {
         return NextResponse.json(
           { error: 'Content is required' },
+          { status: 400 },
+        );
+      }
+
+      if (content.trim().length > MAX_TEXT_PAGE_CHARS) {
+        return NextResponse.json(
+          {
+            error: `Page content exceeds the ${MAX_TEXT_PAGE_CHARS} character limit. Please create an additional page for the remaining text.`,
+          },
           { status: 400 },
         );
       }

@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/db';
 import { uploadImage, deleteFile } from '@/lib/file-upload';
+import { MAX_TEXT_PAGE_CHARS } from '@/lib/config/upload-limits';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ chapterId: string; pageId: string }> }
+  { params }: { params: Promise<{ chapterId: string; pageId: string }> },
 ) {
   const { chapterId, pageId } = await params;
   try {
@@ -42,11 +43,12 @@ export async function PATCH(
         // Handle image replacement
         const formData = await request.formData();
         const file = formData.get('image') as File;
+        const optimize = formData.get('optimize') === 'true';
 
         if (!file) {
           return NextResponse.json(
             { error: 'Image file is required' },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -58,17 +60,24 @@ export async function PATCH(
         if (!existingPage) {
           return NextResponse.json(
             { error: 'Page not found' },
-            { status: 404 }
+            { status: 404 },
           );
         }
 
-        // Upload new image
-        const uploadResult = await uploadImage(file, chapter.bookId, chapterId);
+        // Upload new image (optionally resized + compressed on the server)
+        const uploadResult = await uploadImage(
+          file,
+          chapter.bookId,
+          chapterId,
+          {
+            optimize,
+          },
+        );
 
         if (!uploadResult.success) {
           return NextResponse.json(
             { error: uploadResult.error },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -99,7 +108,7 @@ export async function PATCH(
       } else {
         return NextResponse.json(
           { error: 'Invalid request format' },
-          { status: 400 }
+          { status: 400 },
         );
       }
     } else {
@@ -110,7 +119,16 @@ export async function PATCH(
       if (!content || !content.trim()) {
         return NextResponse.json(
           { error: 'Content is required' },
-          { status: 400 }
+          { status: 400 },
+        );
+      }
+
+      if (content.trim().length > MAX_TEXT_PAGE_CHARS) {
+        return NextResponse.json(
+          {
+            error: `Page content exceeds the ${MAX_TEXT_PAGE_CHARS} character limit. Please create an additional page for the remaining text.`,
+          },
+          { status: 400 },
         );
       }
 
@@ -148,14 +166,14 @@ export async function PATCH(
     console.error('Error updating page:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ chapterId: string; pageId: string }> }
+  { params }: { params: Promise<{ chapterId: string; pageId: string }> },
 ) {
   const { chapterId, pageId } = await params;
 
@@ -234,7 +252,7 @@ export async function DELETE(
     console.error('Error deleting page:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

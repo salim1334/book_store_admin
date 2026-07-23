@@ -23,6 +23,42 @@ export interface UploadResult {
   error?: string;
 }
 
+export interface UploadImageOptions {
+  /**
+   * When true, the image is re-encoded as compressed WebP on the server
+   * before saving. The original dimensions are preserved.
+   * Optional: falls back to the original file if optimization fails
+   * (e.g. `sharp` is not installed).
+   */
+  optimize?: boolean;
+}
+
+/**
+ * Compress an image buffer as WebP using sharp (if available) while keeping
+ * the original dimensions. Returns the optimized buffer and the new file
+ * extension, or null when optimization is unavailable/fails so callers can
+ * fall back to the original.
+ */
+async function optimizeImageBuffer(
+  buffer: Buffer,
+): Promise<{ buffer: Buffer; ext: string } | null> {
+  try {
+    const sharpModule = await import('sharp');
+    const sharp = sharpModule.default;
+    const optimized = await sharp(buffer)
+      .rotate() // respect EXIF orientation
+      .webp({ quality: uploadLimits.imageOptimizeQuality })
+      .toBuffer();
+    return { buffer: optimized, ext: '.webp' };
+  } catch (error) {
+    console.warn(
+      'Image optimization skipped (sharp unavailable or failed):',
+      error,
+    );
+    return null;
+  }
+}
+
 /**
  * Validate file type
  */
@@ -57,7 +93,8 @@ export function generateUniqueFilename(originalName: string): string {
 export async function uploadImage(
   file: File,
   bookId: string,
-  identifier: string // e.g., chapterId or 'cover'
+  identifier: string, // e.g., chapterId or 'cover'
+  options: UploadImageOptions = {},
 ): Promise<UploadResult> {
   try {
     // Validate file type
@@ -65,7 +102,7 @@ export async function uploadImage(
       return {
         success: false,
         error: `Invalid file type. Supported: ${uploadLimits.supportedImageTypes.join(
-          ', '
+          ', ',
         )}`,
       };
     }
@@ -87,19 +124,27 @@ export async function uploadImage(
       'uploads',
       'images',
       bookId,
-      identifier
+      identifier,
     );
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true });
     }
 
-    // Generate unique filename
-    const filename = generateUniqueFilename(file.name);
-    const filePath = path.join(uploadDir, filename);
-
     // Convert File to Buffer
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    let buffer = Buffer.from(bytes);
+
+    // Optional server-side optimization (compress to WebP, keep original size)
+    let filename = generateUniqueFilename(file.name);
+    if (options.optimize) {
+      const optimized = await optimizeImageBuffer(buffer);
+      if (optimized) {
+        buffer = Buffer.from(optimized.buffer);
+        filename = filename.replace(path.extname(filename), optimized.ext);
+      }
+    }
+
+    const filePath = path.join(uploadDir, filename);
 
     // Write file
     await writeFile(filePath, buffer);
@@ -125,7 +170,7 @@ export async function uploadImage(
 export async function uploadAudio(
   file: File,
   bookId: string,
-  chapterId: string
+  chapterId: string,
 ): Promise<UploadResult> {
   try {
     // Validate file type
@@ -133,7 +178,7 @@ export async function uploadAudio(
       return {
         success: false,
         error: `Invalid file type. Supported: ${uploadLimits.supportedAudioTypes.join(
-          ', '
+          ', ',
         )}`,
       };
     }
@@ -155,7 +200,7 @@ export async function uploadAudio(
       'uploads',
       'audio',
       bookId,
-      chapterId
+      chapterId,
     );
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true });
