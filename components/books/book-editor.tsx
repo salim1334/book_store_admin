@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getBookStatusBadge } from '@/lib/utils';
+import { Chapter } from '@/types';
 
 interface BookEditorProps {
   book: any;
@@ -160,7 +161,7 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
     null,
   );
   const coverImageInputRef = useRef<HTMLInputElement>(null);
-  const [chapters, setChapters] = useState(initialBook.chapters || []);
+  const [chapters, setChapters] = useState<Chapter[]>(initialBook.chapters || []);
   const [publishIssues, setPublishIssues] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     title: book.title,
@@ -304,9 +305,9 @@ export function BookEditor({ book: initialBook }: BookEditorProps) {
               method: 'DELETE',
             });
             if (response.ok) {
-              setChapters((prev) =>
-                prev.filter((c: any) => c.id !== chapter.id),
-              );
+                setChapters((prev) =>
+                prev.filter((c) => c.id !== chapter.id),
+                );
               toast.success('Chapter deleted successfully!');
             } else {
               const error = await response.json();
